@@ -18,5 +18,8 @@
   "homepage": "https://github.com/iifawzi/tf-raft#readme",
   "dependencies": {
     "module-alias": "^2.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0"
   }
 }
