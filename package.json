@@ -1,0 +1,22 @@
+{
+  "name": "tf-raft",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iifawzi/tf-raft.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iifawzi/tf-raft/issues"
+  },
+  "homepage": "https://github.com/iifawzi/tf-raft#readme",
+  "dependencies": {
+    "module-alias": "^2.2.3"
+  }
+}
