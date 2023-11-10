@@ -4,6 +4,6 @@ export enum STATES {
     LEADER =  'LEADER',
 }
 
-export enum EVENTS {
+export enum RAFT_CORE_EVENTS {
     STATE = 'STATE'
 }

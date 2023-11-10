@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-grpc": "./scripts/build.sh"
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,10 @@
   },
   "homepage": "https://github.com/iifawzi/tf-raft#readme",
   "dependencies": {
+    "@grpc/grpc-js": "^1.9.9",
+    "grpc": "^1.24.11",
+    "grpc_tools_node_protoc_ts": "^5.3.3",
+    "grpc-tools": "^1.12.4",
     "module-alias": "^2.2.3"
   },
   "devDependencies": {

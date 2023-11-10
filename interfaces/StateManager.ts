@@ -2,12 +2,15 @@
 export interface StateManager {
   persistent: {
     getCurrentTerm(): number;
+    setCurrentTerm(term: number): void;
     IncrementCurrentTerm(): void;
 
-    getVotedFor(): number;
-    setVotedFor(nodeId: string): void;
+    getVotedFor(): string;
+    setVotedFor(nodeId: string | null): void;
 
+    // TODO:: commands types
     getLog(): [];
+    getLastLogEntry(): any;
     setLog(): void;
   };
   volatile: {
