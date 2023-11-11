@@ -59,7 +59,7 @@ export class RaftNode extends EventEmitter {
     this.setHeartBeatTimeout();
   }
 
-  public higherTermDiscovered(term: number) {
+  private higherTermDiscovered(term: number) {
     // we need to clear the votes, preparing for next elections.
     this.stateManager.persistent.setVotedFor(null);
     this.stateManager.persistent.setCurrentTerm(term);
