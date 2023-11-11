@@ -21,7 +21,7 @@ export class RaftNode extends EventEmitter {
     this.state = STATES.FOLLOWER;
     this.server = server;
     this.server.listen(this);
-    this.resetElectionTimeout();
+    this.becomeFollower();
   }
 
   /**********************
@@ -71,6 +71,7 @@ export class RaftNode extends EventEmitter {
     this.changeState(STATES.FOLLOWER);
     this.resetElectionTimeout();
   }
+
   /**********************
   Leader Election: (Ch. 3.4)
   **********************/
