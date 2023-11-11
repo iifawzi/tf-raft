@@ -104,7 +104,7 @@ export class RaftNode extends EventEmitter {
     }
 
     if (voterTerm > electionTerm) {
-      // node is stale, will be switched to follower, votes will be reset, and election timeout to be reset.
+      // node is stale, will be switched to follower, votes will be reset, and election timeout will be reset.
       this.higherTermDiscovered(voterTerm);
       return;
     }
