@@ -1,10 +1,10 @@
-import { Connection, Server, StateManager } from "@/interfaces";
+import { PeerConnection, Server, StateManager } from "@/interfaces";
 import EventEmitter from "events";
 import { getRandomTimeout } from "@/utils";
 import { RAFT_CORE_EVENTS, STATES } from "./constants";
 import { RequestVoteRequest, RequestVoteResponse } from "@/dtos";
 export class RaftNode extends EventEmitter {
-  private peers: Connection[] = [];
+  private peers: PeerConnection[] = [];
   private state!: STATES;
 
   private electionVotesForMe: number = 0;
@@ -75,7 +75,21 @@ export class RaftNode extends EventEmitter {
   Leader Election: (Ch. 3.4)
   **********************/
   private requestVotes() {
-    // this.server.requestVotes(this.peers, this.voteReceived.bind(this));
+    let currentTerm = this.stateManager.persistent.getCurrentTerm();
+    let lastLogTerm = this.stateManager.persistent.getLastLogEntry().term;
+    let lastLogIndex = this.stateManager.persistent.getLastIndex();
+
+    const request: RequestVoteRequest = {
+      term: currentTerm,
+      candidateId: this.nodeId,
+      lastLogIndex: lastLogIndex,
+      lastLogTerm: lastLogTerm,
+    }
+
+    for (let i = 0; i < this.peers.length; i++) {
+      const peer = this.peers[i];
+      peer.requestVote(request, this.voteReceived(currentTerm).bind(this));
+    }
   }
 
   /**
@@ -85,41 +99,39 @@ export class RaftNode extends EventEmitter {
    * @param voterTerm the term of the voter.
    * @returns
    */
-  private voteReceived(
-    electionTerm: number,
-    voteGranted: boolean,
-    voterTerm: number
-  ) {
-    let currentTerm = this.stateManager.persistent.getCurrentTerm();
-    if (electionTerm !== currentTerm || this.state !== STATES.CANDIDATE) {
-      // we can reach here if one of the requests took too much time and we started another election round.
-      // or if we already converted to leader or follower because we had the majority already from the rest of the voters.
-      return;
-    }
+  private voteReceived(electionTerm: number) {
+    return (voteGranted: boolean, voterTerm: number) => {
+      let currentTerm = this.stateManager.persistent.getCurrentTerm();
+      if (electionTerm !== currentTerm || this.state !== STATES.CANDIDATE) {
+        // we can reach here if one of the requests took too much time and we started another election round.
+        // or if we already converted to leader or follower because we had the majority already from the rest of the voters.
+        return;
+      }
 
-    if (voteGranted) {
-      this.electionVotesForMe++;
-    } else {
-      this.electionVotesCount++;
-    }
+      if (voteGranted) {
+        this.electionVotesForMe++;
+      } else {
+        this.electionVotesCount++;
+      }
 
-    if (voterTerm > electionTerm) {
-      // node is stale, will be switched to follower, votes will be reset, and election timeout will be reset.
-      this.higherTermDiscovered(voterTerm);
-      return;
-    }
+      if (voterTerm > electionTerm) {
+        // node is stale, will be switched to follower, votes will be reset, and election timeout will be reset.
+        this.higherTermDiscovered(voterTerm);
+        return;
+      }
 
-    // peers + 1 to count current node.
-    const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
-    if (this.electionVotesForMe >= quorum) {
-      this.becomeLeader();
-    } else {
-      // not yet leader.
-    }
+      // peers + 1 to count current node.
+      const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
+      if (this.electionVotesForMe >= quorum) {
+        this.becomeLeader();
+      } else {
+        // not yet leader.
+      }
 
-    if (this.electionVotesCount - this.electionVotesForMe >= quorum) {
-      // lost election, split-vote occurred or another leader won
-    }
+      if (this.electionVotesCount - this.electionVotesForMe >= quorum) {
+        // lost election, split-vote occurred or another leader won
+      }
+    };
   }
 
   /**********************
@@ -144,7 +156,7 @@ export class RaftNode extends EventEmitter {
         this.higherTermDiscovered(requester.term);
       }
       currentTerm = requester.term;
-      
+
       let votedFor = this.stateManager.persistent.getVotedFor();
       if (votedFor === null || votedFor === requester.candidateId) {
         if (
@@ -153,12 +165,10 @@ export class RaftNode extends EventEmitter {
           (requester.lastLogTerm === lastLogTerm &&
             requester.lastLogIndex >= lastLogIndex)
         ) {
- 
-          response.voteGranted = true;          
+          response.voteGranted = true;
           if (votedFor === null) {
             this.stateManager.persistent.setVotedFor(requester.candidateId);
           }
-
         } else {
           response.voteGranted = false;
         }
