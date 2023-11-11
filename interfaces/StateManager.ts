@@ -11,6 +11,7 @@ export interface StateManager {
     setVotedFor(nodeId: string | null): void;
 
     getLog(): LogEntry[];
+    getLogAtIndex(index: number): LogEntry;
     getLastLogEntry(): LogEntry;
     getLastIndex(): number;
     setLog(log: LogEntry): void;
@@ -23,10 +24,10 @@ export interface StateManager {
     setLastApplied(): void;
   };
   volatileLeader: {
-    getNextIndex(): [];
-    setNextIndex(): void;
+    getNextIndex(nodeId: string): number;
+    setNextIndex(nodeId: string, value: number): void;
 
-    getMatchIndex(): [];
-    setMatchIndex(): void;
+    getMatchIndex(nodeId: string): number;
+    setMatchIndex(nodeId: string, value: number): void;
   };
 }

@@ -1,8 +1,13 @@
-import { PeerConnection, Server, StateManager } from "@/interfaces";
+import { LogEntry, PeerConnection, Server, StateManager } from "@/interfaces";
 import EventEmitter from "events";
 import { getRandomTimeout } from "@/utils";
 import { RAFT_CORE_EVENTS, STATES } from "./constants";
-import { RequestVoteRequest, RequestVoteResponse } from "@/dtos";
+import {
+  AppendEntryRequest,
+  AppendEntryResponse,
+  RequestVoteRequest,
+  RequestVoteResponse,
+} from "@/dtos";
 export class RaftNode extends EventEmitter {
   private peers: PeerConnection[] = [];
   private state!: STATES;
@@ -10,6 +15,7 @@ export class RaftNode extends EventEmitter {
   private electionVotesForMe: number = 0;
   private electionVotesCount: number = 0;
   private electionTimeout: NodeJS.Timeout | undefined;
+  private heartbeatInterval: NodeJS.Timeout | undefined;
 
   constructor(
     private readonly id: string,
@@ -33,14 +39,17 @@ export class RaftNode extends EventEmitter {
     }, getRandomTimeout(150, 300));
   }
 
-  private setHeartBeatTimeout() {
-    // TODO:: to be implemented
+  private leaderHeartbeats() {
+    this.heartbeatInterval = setInterval(() => {
+      this.sendHeartbeats();
+    }, getRandomTimeout(50, 50));
   }
 
   /**********************
   State transitions handlers:
   **********************/
   private becomeCandidate() {
+    clearInterval(this.heartbeatInterval);
     this.changeState(STATES.CANDIDATE);
     this.stateManager.persistent.IncrementCurrentTerm();
     // reset from last election:
@@ -56,7 +65,7 @@ export class RaftNode extends EventEmitter {
 
   private becomeLeader() {
     this.changeState(STATES.LEADER);
-    this.setHeartBeatTimeout();
+    this.leaderHeartbeats();
   }
 
   private higherTermDiscovered(term: number) {
@@ -67,6 +76,7 @@ export class RaftNode extends EventEmitter {
   }
 
   private becomeFollower() {
+    clearInterval(this.heartbeatInterval);
     this.changeState(STATES.FOLLOWER);
     this.resetElectionTimeout();
   }
@@ -84,7 +94,7 @@ export class RaftNode extends EventEmitter {
       candidateId: this.nodeId,
       lastLogIndex: lastLogIndex,
       lastLogTerm: lastLogTerm,
-    }
+    };
 
     for (let i = 0; i < this.peers.length; i++) {
       const peer = this.peers[i];
@@ -99,24 +109,26 @@ export class RaftNode extends EventEmitter {
    * @param voterTerm the term of the voter.
    * @returns
    */
-  private voteReceived(electionTerm: number) {
-    return (voteGranted: boolean, voterTerm: number) => {
+  private voteReceived(
+    electionTerm: number
+  ): (voterResponse: RequestVoteResponse) => void {
+    return (voterResponse: RequestVoteResponse): void => {
       let currentTerm = this.stateManager.persistent.getCurrentTerm();
       if (electionTerm !== currentTerm || this.state !== STATES.CANDIDATE) {
-        // we can reach here if one of the requests took too much time and we started another election round.
-        // or if we already converted to leader or follower because we had the majority already from the rest of the voters.
+        // we can get here if one of the requests took too much time and we started another election round.
+        // or if we already converted to leader or follower because a node/this-node had the majority already from the rest of the voters.
         return;
       }
 
-      if (voteGranted) {
+      if (voterResponse.voteGranted) {
         this.electionVotesForMe++;
       } else {
         this.electionVotesCount++;
       }
 
-      if (voterTerm > electionTerm) {
+      if (voterResponse.term > electionTerm) {
         // node is stale, will be switched to follower, votes will be reset, and election timeout will be reset.
-        this.higherTermDiscovered(voterTerm);
+        this.higherTermDiscovered(voterResponse.term);
         return;
       }
 
@@ -130,6 +142,86 @@ export class RaftNode extends EventEmitter {
 
       if (this.electionVotesCount - this.electionVotesForMe >= quorum) {
         // lost election, split-vote occurred or another leader won
+      }
+    };
+  }
+
+  /**********************
+  Appending Entries & Heartbeats:
+  **********************/
+  private sendHeartbeats() {
+    let currentTerm = this.stateManager.persistent.getCurrentTerm();
+    let leaderCommit = this.stateManager.volatile.getCommitIndex();
+
+    for (let i = 0; i < this.peers.length; i++) {
+      const peer = this.peers[i];
+      
+      const logs = this.stateManager.persistent.getLog()
+      let prevLogTerm = -1;
+      const nextIndex = this.stateManager.volatileLeader.getNextIndex(peer.peerId);
+      const prevLogIndex = nextIndex - 1;
+      if (prevLogIndex >= 0) {
+        prevLogTerm = this.stateManager.persistent.getLogAtIndex(prevLogIndex).term
+      }
+      
+      let entries: LogEntry[] = [];
+      if (logs.length > nextIndex) {
+        // send only the logs[nextIndex].
+        // this can be improved as mentioned in the paper to send multiple logs at once.
+        entries = [logs[nextIndex]];
+      } 
+
+      const request: AppendEntryRequest = {
+        term: currentTerm,
+        leaderId: this.nodeId,
+        prevLogIndex: prevLogIndex,
+        prevLogTerm ,
+        entries,
+        leaderCommit,
+      };
+  
+      peer.appendEntry(
+        request,
+        this.appendEntryResponseReceived(
+          request.entries,
+          peer.peerId,
+          currentTerm
+        ).bind(this)
+      );
+    }
+  }
+
+  private appendEntryResponseReceived(
+    entries: LogEntry[],
+    peerId: string,
+    sentAtTerm: number
+  ): (receiverResponse: AppendEntryResponse) => void {
+    return (receiverResponse: AppendEntryResponse) => {
+      let currentTerm = this.stateManager.persistent.getCurrentTerm();
+      if (this.state !== STATES.LEADER || currentTerm !== sentAtTerm) {
+        // we can get here if one of the requests took too much time, and node's state has been changed
+        return;
+      }
+
+      if (receiverResponse.term > currentTerm) {
+        this.becomeFollower();
+        return;
+      }
+
+      if (receiverResponse.success) {
+        const nextIndex =
+          this.stateManager.volatileLeader.getNextIndex(peerId) +
+          entries.length;
+        this.stateManager.volatileLeader.setNextIndex(peerId, nextIndex);
+        this.stateManager.volatileLeader.setMatchIndex(peerId, nextIndex - 1);
+
+        // TODO:: we need to respond to the client about committed entries.
+      } else {
+        // Ch.3 P21 - Consistency checks failed.
+        this.stateManager.volatileLeader.setNextIndex(
+          peerId,
+          this.stateManager.volatileLeader.getNextIndex(peerId) - 1
+        );
       }
     };
   }
