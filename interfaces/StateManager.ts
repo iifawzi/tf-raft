@@ -1,3 +1,5 @@
+import { LogEntry } from "./LogEntry";
+
 // Ch. 3.2 p.13
 export interface StateManager {
   persistent: {
@@ -8,10 +10,10 @@ export interface StateManager {
     getVotedFor(): string;
     setVotedFor(nodeId: string | null): void;
 
-    // TODO:: commands types
-    getLog(): [];
-    getLastLogEntry(): any;
-    setLog(): void;
+    getLog(): LogEntry[];
+    getLastLogEntry(): LogEntry;
+    getLastIndex(): number;
+    setLog(log: LogEntry): void;
   };
   volatile: {
     getCommitIndex(): number;

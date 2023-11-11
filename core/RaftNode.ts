@@ -131,9 +131,8 @@ export class RaftNode extends EventEmitter {
     this.resetElectionTimeout();
     let currentTerm = this.stateManager.persistent.getCurrentTerm();
 
-    // TODO:: Handle when log is finalized
     let lastLogTerm = this.stateManager.persistent.getLastLogEntry().term;
-    let lastLogIndex = this.stateManager.persistent.getLastLogEntry().index;
+    let lastLogIndex = this.stateManager.persistent.getLastIndex();
 
     const response: any = {};
     if (requester.term < currentTerm) {
