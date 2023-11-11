@@ -5,7 +5,7 @@ import { RAFT_CORE_EVENTS, STATES } from "./constants";
 import { RequestVoteRequest, RequestVoteResponse } from "@/dtos";
 export class RaftNode extends EventEmitter {
   private peers: Connection[] = [];
-  private state: STATES;
+  private state!: STATES;
 
   private electionVotesForMe: number = 0;
   private electionVotesCount: number = 0;
@@ -18,7 +18,6 @@ export class RaftNode extends EventEmitter {
   ) {
     super();
     this.id = id;
-    this.state = STATES.FOLLOWER;
     this.server = server;
     this.server.listen(this);
     this.becomeFollower();
