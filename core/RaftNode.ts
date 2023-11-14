@@ -66,6 +66,13 @@ export class RaftNode extends EventEmitter {
   private becomeLeader() {
     this.stateManager.volatileLeader.reset();
     this.changeState(STATES.LEADER);
+    // TODO:: check this and improve no-op command.
+    this.stateManager.persistent.appendEntries([
+      {
+        term: this.stateManager.persistent.getCurrentTerm(),
+        command: "no-op",
+      },
+    ]);
     this.leaderHeartbeats();
   }
 
@@ -313,7 +320,10 @@ export class RaftNode extends EventEmitter {
       success: true,
       term: currentTerm,
     };
-    if (request.term > currentTerm || (request.term == currentTerm && this.state !== STATES.FOLLOWER)) {
+    if (
+      request.term > currentTerm ||
+      (request.term == currentTerm && this.state !== STATES.FOLLOWER)
+    ) {
       this.stateManager.persistent.setCurrentTerm(request.term);
       this.becomeFollower();
     } else if (currentTerm > request.term) {
