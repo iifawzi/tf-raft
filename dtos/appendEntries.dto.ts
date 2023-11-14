@@ -11,5 +11,5 @@ export interface AppendEntryRequest {
 
 export interface AppendEntryResponse {
   term: number;
-  success: number;
+  success: boolean;
 }

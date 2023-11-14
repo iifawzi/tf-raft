@@ -12,9 +12,10 @@ export interface StateManager {
 
     getLog(): LogEntry[];
     getLogAtIndex(index: number): LogEntry;
+    deleteFromIndexMovingForward(index: number): void;
     getLastLogEntry(): LogEntry;
     getLastIndex(): number;
-    setLog(log: LogEntry): void;
+    appendEntries(logs: LogEntry[]): void;
   };
   volatile: {
     getCommitIndex(): number;
@@ -30,7 +31,8 @@ export interface StateManager {
     getMatchIndex(nodeId: string): number;
     setMatchIndex(nodeId: string, value: number): void;
 
-    // reinitialize
+    // reinitialize, Ch.3 P13. 
+    // matchIndex to be 0, nextIndex to be last logIndex + 1;
     reset(): void;
   };
 }

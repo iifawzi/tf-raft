@@ -303,6 +303,49 @@ export class RaftNode extends EventEmitter {
     return response;
   }
 
+  public appendEntryHandler(request: AppendEntryRequest): AppendEntryResponse {
+    let currentTerm = this.stateManager.persistent.getCurrentTerm();
+    let commitIndex = this.stateManager.volatile.getCommitIndex();
+    let prevLogEntry = this.stateManager.persistent.getLogAtIndex(
+      request.prevLogIndex
+    );
+    const response = {
+      success: true,
+      term: currentTerm,
+    };
+    if (request.term > currentTerm || (request.term == currentTerm && this.state !== STATES.FOLLOWER)) {
+      this.stateManager.persistent.setCurrentTerm(request.term);
+      this.becomeFollower();
+    } else if (currentTerm > request.term) {
+      response.success = false;
+      return response;
+    }
+
+    if (!prevLogEntry) {
+      response.success = false;
+      return response;
+    }
+
+    if (prevLogEntry.term !== request.prevLogTerm) {
+      this.stateManager.persistent.deleteFromIndexMovingForward(
+        request.prevLogIndex
+      );
+    }
+
+    this.stateManager.persistent.appendEntries(request.entries);
+
+    const lastIndex = this.stateManager.persistent.getLastIndex();
+    if (request.leaderCommit > commitIndex) {
+      // leaderCommit if we're already in sync, or lastIndex if the follower is behind the leader.
+      // and there're entires that hasn't been sent yet.
+      this.stateManager.volatile.setCommitIndex(
+        Math.min(request.leaderCommit, lastIndex)
+      );
+    }
+
+    return response;
+  }
+
   /**********************
    Setters and getters
    **********************/
