@@ -18,7 +18,7 @@ export interface StateManager {
   };
   volatile: {
     getCommitIndex(): number;
-    setCommitIndex(): void;
+    setCommitIndex(index: number): void;
 
     getLastApplied(): number;
     setLastApplied(): void;
@@ -29,5 +29,8 @@ export interface StateManager {
 
     getMatchIndex(nodeId: string): number;
     setMatchIndex(nodeId: string, value: number): void;
+
+    // reinitialize
+    reset(): void;
   };
 }

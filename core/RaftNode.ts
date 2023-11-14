@@ -64,6 +64,7 @@ export class RaftNode extends EventEmitter {
   }
 
   private becomeLeader() {
+    this.stateManager.volatileLeader.reset();
     this.changeState(STATES.LEADER);
     this.leaderHeartbeats();
   }
@@ -152,34 +153,36 @@ export class RaftNode extends EventEmitter {
   private sendHeartbeats() {
     let currentTerm = this.stateManager.persistent.getCurrentTerm();
     let leaderCommit = this.stateManager.volatile.getCommitIndex();
-
     for (let i = 0; i < this.peers.length; i++) {
       const peer = this.peers[i];
-      
-      const logs = this.stateManager.persistent.getLog()
+
+      const logs = this.stateManager.persistent.getLog();
       let prevLogTerm = -1;
-      const nextIndex = this.stateManager.volatileLeader.getNextIndex(peer.peerId);
+      const nextIndex = this.stateManager.volatileLeader.getNextIndex(
+        peer.peerId
+      );
       const prevLogIndex = nextIndex - 1;
       if (prevLogIndex >= 0) {
-        prevLogTerm = this.stateManager.persistent.getLogAtIndex(prevLogIndex).term
+        prevLogTerm =
+          this.stateManager.persistent.getLogAtIndex(prevLogIndex).term;
       }
-      
+
       let entries: LogEntry[] = [];
       if (logs.length > nextIndex) {
         // send only the logs[nextIndex].
         // this can be improved as mentioned in the paper to send multiple logs at once.
         entries = [logs[nextIndex]];
-      } 
+      }
 
       const request: AppendEntryRequest = {
         term: currentTerm,
         leaderId: this.nodeId,
         prevLogIndex: prevLogIndex,
-        prevLogTerm ,
+        prevLogTerm,
         entries,
         leaderCommit,
       };
-  
+
       peer.appendEntry(
         request,
         this.appendEntryResponseReceived(
@@ -188,6 +191,34 @@ export class RaftNode extends EventEmitter {
           currentTerm
         ).bind(this)
       );
+    }
+
+    /**
+     * Rules for servers, last point P13.
+     */
+    let nowTerm = this.stateManager.persistent.getCurrentTerm();
+    // guard, maybe state has changed in appendEntryResponseReceived
+    if (this.state === STATES.LEADER && currentTerm === nowTerm) {
+      const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
+      const commitIndex = this.stateManager.volatile.getCommitIndex();
+      const log = this.stateManager.persistent.getLog();
+      for (let i = commitIndex + 1; i < log.length; i++) {
+        const l = log[i];
+        if (l.term == currentTerm) {
+          let matched = 1; // leader
+          for (let i = 0; i < this.peers.length; i++) {
+            const matchedIndex = this.stateManager.volatileLeader.getMatchIndex(
+              this.peers[i].peerId
+            );
+            if (matchedIndex >= i) {
+              matched++;
+            }
+          }
+          if (matched >= quorum) {
+            this.stateManager.volatile.setCommitIndex(i);
+          }
+        }
+      }
     }
   }
 
@@ -214,8 +245,6 @@ export class RaftNode extends EventEmitter {
           entries.length;
         this.stateManager.volatileLeader.setNextIndex(peerId, nextIndex);
         this.stateManager.volatileLeader.setMatchIndex(peerId, nextIndex - 1);
-
-        // TODO:: we need to respond to the client about committed entries.
       } else {
         // Ch.3 P21 - Consistency checks failed.
         this.stateManager.volatileLeader.setNextIndex(
