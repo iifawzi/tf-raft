@@ -3,5 +3,5 @@ import { AppendEntryRequest, AppendEntryResponse, RequestVoteRequest, RequestVot
 export interface PeerConnection {
     peerId: string,
     requestVote(request: RequestVoteRequest, callback : (response: RequestVoteResponse) => void): void;
-    appendEntry(request: AppendEntryRequest, callback : (response: AppendEntryResponse) => void): void;
+    appendEntries(request: AppendEntryRequest, callback : (response: AppendEntryResponse) => void): void;
 }

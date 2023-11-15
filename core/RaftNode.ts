@@ -190,7 +190,7 @@ export class RaftNode extends EventEmitter {
         leaderCommit,
       };
 
-      peer.appendEntry(
+      peer.appendEntries(
         request,
         this.appendEntryResponseReceived(
           request.entriesList,
