@@ -28,7 +28,7 @@ message AppendEntriesRequest {
 
 message AppendEntriesResponse {
     int32 term = 1;
-    bool sucess = 2;
+    bool success = 2;
 }
 
 message LogEntry {

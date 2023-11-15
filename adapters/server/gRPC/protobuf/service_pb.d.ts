@@ -98,8 +98,8 @@ export namespace AppendEntriesRequest {
 export class AppendEntriesResponse extends jspb.Message { 
     getTerm(): number;
     setTerm(value: number): AppendEntriesResponse;
-    getSucess(): boolean;
-    setSucess(value: boolean): AppendEntriesResponse;
+    getSuccess(): boolean;
+    setSuccess(value: boolean): AppendEntriesResponse;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): AppendEntriesResponse.AsObject;
@@ -114,7 +114,7 @@ export class AppendEntriesResponse extends jspb.Message {
 export namespace AppendEntriesResponse {
     export type AsObject = {
         term: number,
-        sucess: boolean,
+        success: boolean,
     }
 }
 

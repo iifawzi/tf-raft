@@ -854,7 +854,7 @@ proto.AppendEntriesResponse.prototype.toObject = function(opt_includeInstance) {
 proto.AppendEntriesResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
     term: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    sucess: jspb.Message.getBooleanFieldWithDefault(msg, 2, false)
+    success: jspb.Message.getBooleanFieldWithDefault(msg, 2, false)
   };
 
   if (includeInstance) {
@@ -897,7 +897,7 @@ proto.AppendEntriesResponse.deserializeBinaryFromReader = function(msg, reader) 
       break;
     case 2:
       var value = /** @type {boolean} */ (reader.readBool());
-      msg.setSucess(value);
+      msg.setSuccess(value);
       break;
     default:
       reader.skipField();
@@ -935,7 +935,7 @@ proto.AppendEntriesResponse.serializeBinaryToWriter = function(message, writer) 
       f
     );
   }
-  f = message.getSucess();
+  f = message.getSuccess();
   if (f) {
     writer.writeBool(
       2,
@@ -964,10 +964,10 @@ proto.AppendEntriesResponse.prototype.setTerm = function(value) {
 
 
 /**
- * optional bool sucess = 2;
+ * optional bool success = 2;
  * @return {boolean}
  */
-proto.AppendEntriesResponse.prototype.getSucess = function() {
+proto.AppendEntriesResponse.prototype.getSuccess = function() {
   return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 2, false));
 };
 
@@ -976,7 +976,7 @@ proto.AppendEntriesResponse.prototype.getSucess = function() {
  * @param {boolean} value
  * @return {!proto.AppendEntriesResponse} returns this
  */
-proto.AppendEntriesResponse.prototype.setSucess = function(value) {
+proto.AppendEntriesResponse.prototype.setSuccess = function(value) {
   return jspb.Message.setProto3BooleanField(this, 2, value);
 };
 
