@@ -1,1 +1,1 @@
-adapters/network/gRPC/* linguist-vendored=false
+adapters/network/gRPC/protobuf/* -linguist-detectable
