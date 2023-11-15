@@ -49,4 +49,9 @@ export class gRPCServer implements Server {
     // callback(null, response);
   }
 
+  AppendEntries(call: grpc.ServerUnaryCall<messages.AppendEntriesRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.AppendEntriesResponse>): void {
+    const response = this.node.appendEntryHandler(call.request);
+    // callback(null, response);
+  }
+
 }

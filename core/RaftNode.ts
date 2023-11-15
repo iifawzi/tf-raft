@@ -174,11 +174,11 @@ export class RaftNode extends EventEmitter {
           this.stateManager.persistent.getLogAtIndex(prevLogIndex).term;
       }
 
-      let entries: LogEntry[] = [];
+      let entriesList: LogEntry[] = [];
       if (logs.length > nextIndex) {
         // send only the logs[nextIndex].
         // this can be improved as mentioned in the paper to send multiple logs at once.
-        entries = [logs[nextIndex]];
+        entriesList = [logs[nextIndex]];
       }
 
       const request: AppendEntryRequest = {
@@ -186,14 +186,14 @@ export class RaftNode extends EventEmitter {
         leaderId: this.nodeId,
         prevLogIndex: prevLogIndex,
         prevLogTerm,
-        entries,
+        entriesList,
         leaderCommit,
       };
 
       peer.appendEntry(
         request,
         this.appendEntryResponseReceived(
-          request.entries,
+          request.entriesList,
           peer.peerId,
           currentTerm
         ).bind(this)
@@ -342,7 +342,7 @@ export class RaftNode extends EventEmitter {
       );
     }
 
-    this.stateManager.persistent.appendEntries(request.entries);
+    this.stateManager.persistent.appendEntries(request.entriesList);
 
     const lastIndex = this.stateManager.persistent.getLastIndex();
     if (request.leaderCommit > commitIndex) {
