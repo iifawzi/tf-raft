@@ -1,4 +1,4 @@
-// source: adapters/server/grpc/protobuf/service.proto
+// source: adapters/network/grpc/protobuf/service.proto
 /**
  * @fileoverview
  * @enhanceable

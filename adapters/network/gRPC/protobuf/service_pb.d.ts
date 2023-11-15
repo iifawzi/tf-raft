@@ -1,5 +1,5 @@
 // package: 
-// file: adapters/server/grpc/protobuf/service.proto
+// file: adapters/network/grpc/protobuf/service.proto
 
 /* tslint:disable */
 /* eslint-disable */
