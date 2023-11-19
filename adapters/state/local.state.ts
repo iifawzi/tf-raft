@@ -1,5 +1,7 @@
 import { LogEntry, StateManager } from "@/interfaces";
 import { JsonDB, Config } from "node-json-db";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const persistentKeys = {
   CURRENT_TERM: "db.currentTerm",
@@ -26,7 +28,11 @@ export class LocalStateManager implements StateManager {
   }
 
   public async startPersistentDB() {
-    this.db = new JsonDB(new Config("./db/" + this.nodeId, true, false, "."));
+    const directory = "./db";
+    for (const file of await fs.readdir(directory)) {
+      await fs.unlink(path.join(directory, file));
+    }
+    this.db = new JsonDB(new Config(`${directory}/` + this.nodeId, true, false, "."));
     await this.db.push(persistentKeys.CURRENT_TERM, -1);
     await this.db.push(persistentKeys.LOG, []);
     await this.db.push(persistentKeys.VOTED_FOR, -1);
