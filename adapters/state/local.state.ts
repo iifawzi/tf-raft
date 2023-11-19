@@ -58,6 +58,10 @@ export class LocalStateManager implements StateManager {
 
   public async getLogAtIndex(index: number): Promise<LogEntry> {
     const log = await this.db.getData(persistentKeys.LOG);
+    const logEntry = log[index];
+    if (!logEntry) {
+      return { term: -1, command: "" };
+    }
     return log[index];
   }
   public async deleteFromIndexMovingForward(index: number): Promise<void> {
@@ -72,6 +76,10 @@ export class LocalStateManager implements StateManager {
   public async getLastLogEntry(): Promise<LogEntry> {
     const log = await this.db.getData(persistentKeys.LOG);
     console.log(`${this.nodeId} accessing last log entry`, log[log.length - 1]);
+    const lastLog = log[log.length - 1];
+    if (!lastLog) {
+      return { term: -1, command: "" };
+    }
     return log[log.length - 1];
   }
 
@@ -120,12 +128,11 @@ export class LocalStateManager implements StateManager {
     this.volatile.matchIndex[nodeId] = value;
   }
   public async reset(): Promise<void> {
-    this.volatile.matchIndex = {}
+    this.volatile.matchIndex = {};
 
     const lastIndex = await this.getLastIndex();
     for (let key in this.volatile.nextIndex) {
       this.volatile.nextIndex[key] = lastIndex + 1;
     }
-
   }
 }

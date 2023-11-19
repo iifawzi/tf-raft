@@ -34,40 +34,43 @@ export class RaftNode extends EventEmitter {
   **********************/
   private resetElectionTimeout() {
     clearTimeout(this.electionTimeout);
-    this.electionTimeout = setTimeout(() => {
-      this.becomeCandidate();
+    console.log(`${this.nodeId} timeout has been reset`);
+    this.electionTimeout = setTimeout(async () => {
+      console.log(`${this.nodeId} election timeout finished`)
+      await this.becomeCandidate();
     }, getRandomTimeout(150, 300));
   }
 
   private leaderHeartbeats() {
-    this.heartbeatInterval = setInterval(() => {
-      this.sendHeartbeats();
+    this.heartbeatInterval = setInterval(async () => {
+      await this.sendHeartbeats();
     }, getRandomTimeout(50, 50));
   }
 
   /**********************
   State transitions handlers:
   **********************/
-  private becomeCandidate() {
+  private async becomeCandidate() {
     clearInterval(this.heartbeatInterval);
     this.changeState(STATES.CANDIDATE);
-    this.stateManager.IncrementCurrentTerm();
+    await this.stateManager.IncrementCurrentTerm();
     // reset from last election:
     this.electionVotesForMe = 0;
     this.electionVotesCount = 0;
     // vote for itself:
     this.electionVotesForMe++;
-    this.stateManager.setVotedFor(this.id);
+    await this.stateManager.setVotedFor(this.id);
     this.resetElectionTimeout();
     // request votes:
     this.requestVotes();
   }
 
   private async becomeLeader() {
+    clearTimeout(this.electionTimeout);
     this.stateManager.reset();
     this.changeState(STATES.LEADER);
     // TODO:: check this and improve no-op command.
-    this.stateManager.appendEntries([
+    await this.stateManager.appendEntries([
       {
         term: await this.stateManager.getCurrentTerm(),
         command: "no-op",
@@ -76,10 +79,10 @@ export class RaftNode extends EventEmitter {
     this.leaderHeartbeats();
   }
 
-  private higherTermDiscovered(term: number) {
+  private async higherTermDiscovered(term: number) {
     // we need to clear the votes, preparing for next elections.
-    this.stateManager.setVotedFor(null);
-    this.stateManager.setCurrentTerm(term);
+    await this.stateManager.setVotedFor(null);
+    await this.stateManager.setCurrentTerm(term);
     this.becomeFollower();
   }
 
@@ -94,7 +97,8 @@ export class RaftNode extends EventEmitter {
   **********************/
   private async requestVotes() {
     let currentTerm = await this.stateManager.getCurrentTerm();
-    let lastLogTerm = (await this.stateManager.getLastLogEntry()).term;
+    const lastLog = await this.stateManager.getLastLogEntry();
+    let lastLogTerm = lastLog.term;
     let lastLogIndex = await this.stateManager.getLastIndex();
 
     const request: RequestVoteRequest = {
@@ -107,6 +111,12 @@ export class RaftNode extends EventEmitter {
     for (let i = 0; i < this.peers.length; i++) {
       const peer = this.peers[i];
       peer.requestVote(request, this.voteReceived(currentTerm).bind(this));
+    }
+
+    // peers + 1 to count current node.
+    if (this.peers.length == 0) {
+      // single node, become leader, quorum satisfied
+      await this.becomeLeader();
     }
   }
 
@@ -136,14 +146,14 @@ export class RaftNode extends EventEmitter {
 
       if (voterResponse.term > electionTerm) {
         // node is stale, will be switched to follower, votes will be reset, and election timeout will be reset.
-        this.higherTermDiscovered(voterResponse.term);
+        await this.higherTermDiscovered(voterResponse.term);
         return;
       }
 
       // peers + 1 to count current node.
       const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
       if (this.electionVotesForMe >= quorum) {
-        this.becomeLeader();
+        await this.becomeLeader();
       } else {
         // not yet leader.
       }
@@ -158,6 +168,7 @@ export class RaftNode extends EventEmitter {
   Appending Entries & Heartbeats:
   **********************/
   private async sendHeartbeats() {
+    console.log(`${this.nodeId} sending heartbeat`);
     let currentTerm = await this.stateManager.getCurrentTerm();
     let leaderCommit = this.stateManager.getCommitIndex();
     for (let i = 0; i < this.peers.length; i++) {
@@ -173,7 +184,7 @@ export class RaftNode extends EventEmitter {
       }
 
       let entriesList: LogEntry[] = [];
-      if ((await logs).length > nextIndex) {
+      if (logs.length > nextIndex) {
         // send only the logs[nextIndex].
         // this can be improved as mentioned in the paper to send multiple logs at once.
         entriesList = [logs[nextIndex]];
@@ -193,7 +204,7 @@ export class RaftNode extends EventEmitter {
         this.appendEntryResponseReceived(
           request.entriesList,
           peer.peerId,
-          await currentTerm
+          currentTerm
         ).bind(this)
       );
     }
@@ -268,22 +279,23 @@ export class RaftNode extends EventEmitter {
     this.resetElectionTimeout();
     let currentTerm = await this.stateManager.getCurrentTerm();
 
-    let lastLogTerm = (await this.stateManager.getLastLogEntry()).term;
+    const lastLog = await this.stateManager.getLastLogEntry();
+    let lastLogTerm = lastLog.term;
     let lastLogIndex = await this.stateManager.getLastIndex();
 
     const response: any = {};
-    if (requester.term < (await currentTerm)) {
+    if (requester.term < currentTerm) {
       // requester is stale, won't be granted vote and would be notified about the new term.
       response.voteGranted = false;
     } else {
-      if (requester.term > (await currentTerm)) {
+      if (requester.term > currentTerm) {
         // node is stale, convert to follower, reset the election timeout, and reset votedFor.
-        this.higherTermDiscovered(requester.term);
+        await this.higherTermDiscovered(requester.term);
       }
       currentTerm = requester.term;
 
-      let votedFor = this.stateManager.getVotedFor();
-      if (votedFor === null || (await votedFor) === requester.candidateId) {
+      let votedFor = await this.stateManager.getVotedFor();
+      if (votedFor === null || votedFor === requester.candidateId) {
         if (
           // does the requester have all entries committed in previous terms? (3.6)
           requester.lastLogTerm > lastLogTerm ||
@@ -292,7 +304,7 @@ export class RaftNode extends EventEmitter {
         ) {
           response.voteGranted = true;
           if (votedFor === null) {
-            this.stateManager.setVotedFor(requester.candidateId);
+            await this.stateManager.setVotedFor(requester.candidateId);
           }
         } else {
           response.voteGranted = false;
@@ -307,10 +319,13 @@ export class RaftNode extends EventEmitter {
     return response;
   }
 
-  public async appendEntryHandler(request: AppendEntryRequest): Promise<AppendEntryResponse> {
+  public async appendEntryHandler(
+    request: AppendEntryRequest
+  ): Promise<AppendEntryResponse> {
+    this.resetElectionTimeout();
     let currentTerm = await this.stateManager.getCurrentTerm();
     let commitIndex = this.stateManager.getCommitIndex();
-    let prevLogEntry = this.stateManager.getLogAtIndex(request.prevLogIndex);
+    let prevLogEntry = await this.stateManager.getLogAtIndex(request.prevLogIndex);
     const response = {
       success: true,
       term: currentTerm,
@@ -319,7 +334,7 @@ export class RaftNode extends EventEmitter {
       request.term > currentTerm ||
       (request.term == currentTerm && this.state !== STATES.FOLLOWER)
     ) {
-      this.stateManager.setCurrentTerm(request.term);
+      await this.stateManager.setCurrentTerm(request.term);
       this.becomeFollower();
     } else if (currentTerm > request.term) {
       response.success = false;
@@ -331,11 +346,11 @@ export class RaftNode extends EventEmitter {
       return response;
     }
 
-    if ((await prevLogEntry).term !== request.prevLogTerm) {
-      this.stateManager.deleteFromIndexMovingForward(request.prevLogIndex);
+    if ( prevLogEntry.term !== request.prevLogTerm) {
+     await this.stateManager.deleteFromIndexMovingForward(request.prevLogIndex);
     }
 
-    this.stateManager.appendEntries(request.entriesList);
+    await this.stateManager.appendEntries(request.entriesList);
 
     const lastIndex = await this.stateManager.getLastIndex();
     if (request.leaderCommit > commitIndex) {
@@ -361,7 +376,7 @@ export class RaftNode extends EventEmitter {
     return this.id;
   }
 
-    /**********************
+  /**********************
    Fixed membership configurator
    **********************/
   public addPeers(peerConnections: PeerConnection[]) {
