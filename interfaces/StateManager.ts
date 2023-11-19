@@ -2,37 +2,37 @@ import { LogEntry } from "./LogEntry";
 
 // Ch. 3.2 p.13
 export interface StateManager {
-  persistent: {
-    getCurrentTerm(): number;
-    setCurrentTerm(term: number): void;
-    IncrementCurrentTerm(): void;
+  // Persistent:
+  getCurrentTerm(): Promise<number>;
+  setCurrentTerm(term: number): Promise<void>;
+  IncrementCurrentTerm(): Promise<void>;
 
-    getVotedFor(): string;
-    setVotedFor(nodeId: string | null): void;
+  getVotedFor(): Promise<string>;
+  setVotedFor(nodeId: string | null): Promise<void>;
 
-    getLog(): LogEntry[];
-    getLogAtIndex(index: number): LogEntry;
-    deleteFromIndexMovingForward(index: number): void;
-    getLastLogEntry(): LogEntry;
-    getLastIndex(): number;
-    appendEntries(logs: LogEntry[]): void;
-  };
-  volatile: {
-    getCommitIndex(): number;
-    setCommitIndex(index: number): void;
+  getLog(): Promise<LogEntry[]>;
+  deleteFromIndexMovingForward(index: number): Promise<void>;
+  appendEntries(logs: LogEntry[]): Promise<void>;
+  getLogAtIndex(index: number): Promise<LogEntry>;
+  getLastLogEntry(): Promise<LogEntry>;
+  getLastIndex(): Promise<number>;
 
-    getLastApplied(): number;
-    setLastApplied(): void;
-  };
-  volatileLeader: {
-    getNextIndex(nodeId: string): number;
-    setNextIndex(nodeId: string, value: number): void;
+  // Volatile:
+  getCommitIndex(): number;
+  setCommitIndex(index: number): void;
 
-    getMatchIndex(nodeId: string): number;
-    setMatchIndex(nodeId: string, value: number): void;
+  getLastApplied(): number;
+  setLastApplied(index: number): void;
 
-    // reinitialize, Ch.3 P13. 
-    // matchIndex to be 0, nextIndex to be last logIndex + 1;
-    reset(): void;
-  };
+  // Volatile Leader :
+
+  getNextIndex(nodeId: string): number;
+  setNextIndex(nodeId: string, value: number): void;
+
+  getMatchIndex(nodeId: string): number;
+  setMatchIndex(nodeId: string, value: number): void;
+
+  // reinitialize, Ch.3 P13.
+  // matchIndex to be 0, nextIndex to be last logIndex + 1;
+  reset(): void;
 }

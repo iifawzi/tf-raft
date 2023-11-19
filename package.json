@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build-grpc": "./scripts/build.sh"
+    "test": "jest",
+    "build-grpc": "./scripts/build.sh",
+    "start": "ts-node index.ts"
   },
   "repository": {
     "type": "git",
@@ -22,9 +23,16 @@
     "grpc": "^1.24.11",
     "grpc_tools_node_protoc_ts": "^5.3.3",
     "grpc-tools": "^1.12.4",
-    "module-alias": "^2.2.3"
+    "jest": "^29.7.0",
+    "module-alias": "^2.2.3",
+    "node-json-db": "^2.3.0"
   },
   "devDependencies": {
+    "@babel/preset-typescript": "^7.23.3",
+    "@types/jest": "^29.5.8",
     "@types/node": "^20.9.0"
+  },
+  "_moduleAliases": {
+    "@": "."
   }
 }
