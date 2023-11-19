@@ -9,7 +9,7 @@ import messages from "./protobuf/service_pb";
 import { PeerConnection } from "@/interfaces";
 import { RaftNodeClient } from "./protobuf/service_grpc_pb";
 
-export class gRPCServer implements PeerConnection {
+export class gRPCPeer implements PeerConnection {
   private client!: RaftNodeClient;
   constructor(public peerId: string, private port: number) {
     this.port = port;
@@ -28,7 +28,10 @@ export class gRPCServer implements PeerConnection {
     return client;
   }
 
-  async requestVote(request: RequestVoteRequest): Promise<RequestVoteResponse> {
+  async requestVote(
+    request: RequestVoteRequest,
+    callback: (response: RequestVoteResponse) => void
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const grpcRequest = new messages.RequestVoteRequest()
         .setTerm(request.term)
@@ -44,15 +47,17 @@ export class gRPCServer implements PeerConnection {
             term: response.getTerm(),
             voteGranted: response.getVoteGranted(),
           };
-          resolve(clientResponse);
+          callback(clientResponse);
+          resolve();
         }
       });
     });
   }
 
   async appendEntries(
-    request: AppendEntryRequest
-  ): Promise<AppendEntryResponse> {
+    request: AppendEntryRequest,
+    callback: (response: AppendEntryResponse) => void
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const grpcRequest = new messages.AppendEntriesRequest()
         .setTerm(request.term)
@@ -75,7 +80,8 @@ export class gRPCServer implements PeerConnection {
             term: response.getTerm(),
             success: response.getSuccess(),
           };
-          resolve(clientResponse);
+          callback(clientResponse);
+          resolve();
         }
       });
     });

@@ -44,16 +44,16 @@ export class gRPCServer implements Server {
    RPCs
    *************************/
 
-   RequestVote(call: grpc.ServerUnaryCall<messages.RequestVoteRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.RequestVoteResponse>): void {
-    const response = this.node.requestVoteHandler(call.request);
+   async RequestVote(call: grpc.ServerUnaryCall<messages.RequestVoteRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.RequestVoteResponse>): Promise<void> {
+    const response = await this.node.requestVoteHandler(call.request);
     const grpcResponse = new messages.RequestVoteResponse(); 
     grpcResponse.setTerm(response.term);
     grpcResponse.setVoteGranted(response.voteGranted);
     callback(null, grpcResponse);
   }
 
-  AppendEntries(call: grpc.ServerUnaryCall<messages.AppendEntriesRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.AppendEntriesResponse>): void {
-    const response = this.node.appendEntryHandler(call.request);
+  async AppendEntries(call: grpc.ServerUnaryCall<messages.AppendEntriesRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.AppendEntriesResponse>): Promise<void> {
+    const response = await this.node.appendEntryHandler(call.request);
     const grpcResponse = new messages.AppendEntriesResponse(); 
     grpcResponse.setTerm(response.term);
     grpcResponse.setSuccess(response.success);
