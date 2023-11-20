@@ -82,6 +82,35 @@ describe("Leaders", () => {
     });
   });
 
+  describe("Leader appends commands and replicate them", () => {
+    it("command should be appended to leader and replicated to all nodes", (done) => {
+      let logEntry: LogEntry;
+      const command = "COMMAND-TEST";
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState === STATES.LEADER) {
+            await node.addCommand(command);
+            const lastLog = await node.nodeStore.getLastLogEntry();
+            expect(lastLog.command).toEqual(command);
+            logEntry = lastLog;
+            break;
+          }
+        }
+      }, 300);
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          const lastLog = await node.nodeStore.getLastLogEntry();
+          expect(lastLog.term).toEqual(logEntry.term);
+          expect(lastLog.command).toEqual(logEntry.command);
+          break;
+        }
+        done();
+      }, 800);
+    });
+  });
+
   describe("Leader replicate logs and dynamically fix its nextIndex for other nodes", () => {
     it("nextIndex should be decreased if previous log entry doesn't exist and log should be replicated", (done) => {
       let leaderId: string;

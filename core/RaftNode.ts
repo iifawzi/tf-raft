@@ -156,7 +156,7 @@ export class RaftNode extends EventEmitter {
       const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
       if (this.electionVotesForMe >= quorum) {
         await this.becomeLeader();
-      } 
+      }
       // else: not yet leader.
     };
   }
@@ -399,6 +399,15 @@ export class RaftNode extends EventEmitter {
     return this.stateManager;
   }
 
+  /**********************
+   Client Interaction
+   **********************/
+  public async addCommand(command: any) {
+    if (this.nodeState == STATES.LEADER) {
+      const currentTerm = await this.stateManager.getCurrentTerm();
+      await this.stateManager.appendEntries([{ term: currentTerm, command }]);
+    }
+  }
   /**********************
    Fixed membership configurator & utils
    **********************/
