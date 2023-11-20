@@ -1,11 +1,12 @@
 import { LocalStateManager } from "@/adapters/state";
 
 describe("LocalStateManager", () => {
+  console.log = jest.fn();
   let stateManager: LocalStateManager = new LocalStateManager("TEST_NODE1");
 
   beforeEach(async () => {
     stateManager = new LocalStateManager("NODE1");
-    await stateManager.startPersistentDB();
+    await stateManager.start();
   });
 
   describe("Persistent state", () => {

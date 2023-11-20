@@ -23,16 +23,24 @@ export class LocalStateManager implements StateManager {
     nextIndex: {},
     matchIndex: {},
   };
-  constructor(private nodeId: string) {
+  constructor(private nodeId: string, private path = "db") {
     this.nodeId = nodeId;
+    this.path = path;
   }
 
-  public async startPersistentDB() {
-    const directory = "./db";
-    for (const file of await fs.readdir(directory)) {
-      await fs.unlink(path.join(directory, file));
-    }
-    this.db = new JsonDB(new Config(`${directory}/` + this.nodeId, true, false, "."));
+  public async start() {
+    const directory = `./${this.path}`;
+    try {
+      const dirList = await fs.readdir(directory);
+      if (dirList && dirList.length > 0) {
+        for (const file of dirList) {
+          await fs.unlink(path.join(directory, file));
+        }
+      }
+    } catch (error) {}
+    this.db = new JsonDB(
+      new Config(`${directory}/` + this.nodeId, true, false, ".")
+    );
     await this.db.push(persistentKeys.CURRENT_TERM, -1);
     await this.db.push(persistentKeys.LOG, []);
     await this.db.push(persistentKeys.VOTED_FOR, -1);
@@ -65,7 +73,7 @@ export class LocalStateManager implements StateManager {
   public async getLogAtIndex(index: number): Promise<LogEntry> {
     const log = await this.db.getData(persistentKeys.LOG);
     const logEntry = log[index];
-    if (!logEntry) {
+    if (!logEntry && index == -1) {
       return { term: -1, command: "" };
     }
     return log[index];
@@ -96,7 +104,9 @@ export class LocalStateManager implements StateManager {
   }
 
   public async appendEntries(logs: LogEntry[]): Promise<void> {
-    console.log(`${this.nodeId} is appending entries`, logs);
+    if (logs.length) {
+      console.log(`${this.nodeId} is appending entries`, logs);
+    }
     const log = await this.db.getData(persistentKeys.LOG);
     log.push(...logs);
     await this.db.push(persistentKeys.LOG, log);
@@ -122,13 +132,20 @@ export class LocalStateManager implements StateManager {
       ? this.volatile.nextIndex[nodeId]
       : 0;
   }
+  public getNextIndexes(): Record<string, number> {
+    return this.volatile.nextIndex;
+  }
   public setNextIndex(nodeId: string, value: number): void {
+    console.log(`setting next of node ${nodeId} to ${value}`)
     this.volatile.nextIndex[nodeId] = value;
   }
   public getMatchIndex(nodeId: string): number {
     return this.volatile.matchIndex[nodeId] !== undefined
       ? this.volatile.matchIndex[nodeId]
       : -1;
+  }
+  public getMatchIndexes(): Record<string, number> {
+    return this.volatile.matchIndex;
   }
   public setMatchIndex(nodeId: string, value: number): void {
     this.volatile.matchIndex[nodeId] = value;

@@ -17,7 +17,10 @@ export class MemoryPeer implements PeerConnection {
     request: RequestVoteRequest,
     callback: (response: RequestVoteResponse) => void
   ): Promise<void> {
-    const response = await this.network.requestVoteFromNode(this.peerId, request);
+    const response = await this.network.requestVoteFromNode(
+      this.peerId,
+      request
+    );
     callback(response);
   }
 
@@ -25,7 +28,10 @@ export class MemoryPeer implements PeerConnection {
     request: AppendEntryRequest,
     callback: (response: AppendEntryResponse) => void
   ): Promise<void> {
-    const response = await this.network.appendEntriesToNode(this.peerId, request);
+    const response = await this.network.appendEntriesToNode(
+      this.peerId,
+      request
+    );
     callback(response);
   }
 }

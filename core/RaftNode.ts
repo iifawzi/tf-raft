@@ -10,14 +10,14 @@ import {
 } from "@/dtos";
 export class RaftNode extends EventEmitter {
   private peers: PeerConnection[] = [];
-  public state!: STATES;
+  private state!: STATES;
 
   private electionVotesForMe: number = 0;
   private electionVotesCount: number = 0;
   private electionTimeout: NodeJS.Timeout | undefined;
   private heartbeatInterval: NodeJS.Timeout | undefined;
 
-  constructor(
+  private constructor(
     private readonly id: string,
     private readonly server: Server,
     private readonly stateManager: StateManager
@@ -29,6 +29,15 @@ export class RaftNode extends EventEmitter {
     this.becomeFollower();
   }
 
+  public static async create(
+    id: string,
+    server: Server,
+    stateManager: StateManager
+  ): Promise<RaftNode> {
+    await stateManager.start();
+    return new RaftNode(id, server, stateManager);
+  }
+
   /**********************
   TIMEOUTS:
   **********************/
@@ -36,21 +45,21 @@ export class RaftNode extends EventEmitter {
     clearTimeout(this.electionTimeout);
     console.log(`${this.nodeId} timeout has been reset`);
     this.electionTimeout = setTimeout(async () => {
-      console.log(`${this.nodeId} election timeout finished`)
+      console.log(`${this.nodeId} election timeout finished`);
       await this.becomeCandidate();
     }, getRandomTimeout(150, 300));
   }
 
-  private leaderHeartbeats() {
+  private async leaderHeartbeats() {
     this.heartbeatInterval = setInterval(async () => {
       await this.sendHeartbeats();
-    }, getRandomTimeout(50, 50));
+    }, getRandomTimeout(100, 100));
   }
 
   /**********************
   State transitions handlers:
   **********************/
-  private async becomeCandidate() {
+  public async becomeCandidate() {
     clearInterval(this.heartbeatInterval);
     this.changeState(STATES.CANDIDATE);
     await this.stateManager.IncrementCurrentTerm();
@@ -66,14 +75,13 @@ export class RaftNode extends EventEmitter {
   }
 
   private async becomeLeader() {
-    clearTimeout(this.electionTimeout);
-    this.stateManager.reset();
     this.changeState(STATES.LEADER);
-    // TODO:: check this and improve no-op command.
-    await this.stateManager.appendEntries([
+    clearTimeout(this.electionTimeout);
+    await this.stateManager.reset();
+    this.stateManager.appendEntries([
       {
         term: await this.stateManager.getCurrentTerm(),
-        command: "no-op",
+        command: `no-op-${this.nodeId}`,
       },
     ]);
     this.leaderHeartbeats();
@@ -199,6 +207,12 @@ export class RaftNode extends EventEmitter {
         leaderCommit,
       };
 
+      if (entriesList.length) {
+        console.log(
+          `${this.nodeId} is about to send log of index ${nextIndex} to node ${peer.peerId}`
+        );
+        console.log(this.stateManager.getNextIndexes());
+      }
       peer.appendEntries(
         request,
         this.appendEntryResponseReceived(
@@ -246,7 +260,7 @@ export class RaftNode extends EventEmitter {
     return async (receiverResponse: AppendEntryResponse) => {
       let currentTerm = await this.stateManager.getCurrentTerm();
       if (this.state !== STATES.LEADER || currentTerm !== sentAtTerm) {
-        // we can get here if one of the requests took too much time, and node's state has been changed
+        // we can get here if one of the requests took too much time, and node's state has changed
         return;
       }
 
@@ -256,10 +270,17 @@ export class RaftNode extends EventEmitter {
       }
 
       if (receiverResponse.success) {
-        const nextIndex =
-          this.stateManager.getNextIndex(peerId) + entries.length;
-        this.stateManager.setNextIndex(peerId, nextIndex);
-        this.stateManager.setMatchIndex(peerId, nextIndex - 1);
+        if (entries.length) {
+          const nextIndex =
+            this.stateManager.getNextIndex(peerId) + entries.length;
+          this.stateManager.setNextIndex(peerId, nextIndex);
+          console.log(
+            `next of peer ${peerId} is now ${this.stateManager.getNextIndex(
+              peerId
+            )}`
+          );
+          this.stateManager.setMatchIndex(peerId, nextIndex - 1);
+        }
       } else {
         // Ch.3 P21 - Consistency checks failed.
         this.stateManager.setNextIndex(
@@ -325,7 +346,9 @@ export class RaftNode extends EventEmitter {
     this.resetElectionTimeout();
     let currentTerm = await this.stateManager.getCurrentTerm();
     let commitIndex = this.stateManager.getCommitIndex();
-    let prevLogEntry = await this.stateManager.getLogAtIndex(request.prevLogIndex);
+    let prevLogEntry = await this.stateManager.getLogAtIndex(
+      request.prevLogIndex
+    );
     const response = {
       success: true,
       term: currentTerm,
@@ -342,19 +365,22 @@ export class RaftNode extends EventEmitter {
     }
 
     if (!prevLogEntry) {
+      // Ch.3 P21 - Consistency checks failed.
       response.success = false;
       return response;
     }
 
-    if ( prevLogEntry.term !== request.prevLogTerm) {
-     await this.stateManager.deleteFromIndexMovingForward(request.prevLogIndex);
+    if (prevLogEntry.term !== request.prevLogTerm) {
+      await this.stateManager.deleteFromIndexMovingForward(
+        request.prevLogIndex
+      );
     }
 
     await this.stateManager.appendEntries(request.entriesList);
 
     const lastIndex = await this.stateManager.getLastIndex();
     if (request.leaderCommit > commitIndex) {
-      // leaderCommit if we're already in sync, or lastIndex if the follower is behind the leader.
+      // leaderCommit if we already in sync, or lastIndex if the follower is behind the leader.
       // and there're entires that hasn't been sent yet.
       this.stateManager.setCommitIndex(
         Math.min(request.leaderCommit, lastIndex)
@@ -376,10 +402,32 @@ export class RaftNode extends EventEmitter {
     return this.id;
   }
 
+  get nodeState() {
+    return this.state;
+  }
+
+  get nodeStore() {
+    return this.stateManager;
+  }
+
   /**********************
-   Fixed membership configurator
+   Fixed membership configurator & utils
    **********************/
   public addPeers(peerConnections: PeerConnection[]) {
     this.peers.push(...peerConnections);
+    for (let i = 0; i < peerConnections.length; i++) {
+      const peer = peerConnections[i];
+      this.stateManager.setNextIndex(peer.peerId, 0);
+      this.stateManager.setMatchIndex(peer.peerId, -1);
+    }
+  }
+
+  public replaceNetwork(peerConnections: PeerConnection[]) {
+    this.peers.push(...peerConnections);
+  }
+
+  public stopListeners() {
+    clearTimeout(this.electionTimeout);
+    clearInterval(this.heartbeatInterval);
   }
 }
