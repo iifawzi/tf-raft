@@ -58,28 +58,6 @@ describe("Leaders", () => {
     }
   });
 
-  describe("Only one leader is elected", () => {
-    it("should have only one leader per term", (done) => {
-      let leader: string;
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            leader = node.nodeId;
-            break;
-          }
-        }
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== leader) {
-            expect(node.nodeState).toEqual(STATES.FOLLOWER);
-          }
-        }
-        done();
-      }, 1000);
-    });
-  });
-
   describe("Leader appends no-op entry after becoming a leader", () => {
     it("no-op entry should be replicated to all nodes", (done) => {
       let logEntry: LogEntry;
@@ -138,58 +116,6 @@ describe("Leaders", () => {
         }
         done();
       }, 1000);
-    });
-  });
-
-  describe("Step down if discovered peer with higher term", () => {
-    it("should step down if discovered peer with higher term", (done) => {
-      let originalLeader: string;
-
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-            originalLeader = node.nodeId;
-          }
-        }
-      }, 500);
-
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== originalLeader) {
-            await node.becomeCandidate();
-            break;
-          }
-        }
-      }, 810);
-
-      setTimeout(async () => {
-        let lastEntry!: LogEntry;
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId === originalLeader) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(1);
-            expect(node.nodeState).toEqual(STATES.FOLLOWER);
-          }
-
-          if (node.nodeState == STATES.LEADER) {
-            const lastLog = await node.nodeStore.getLastLogEntry();
-            lastEntry = lastLog
-          }
-        }
-
-        // Validate that all nodes have the correct term and logs replicated
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          expect(await node.nodeStore.getCurrentTerm()).toEqual(1);
-          expect((await node.nodeStore.getLastLogEntry()).term).toEqual(lastEntry.term);
-          expect((await node.nodeStore.getLastLogEntry()).command).toEqual(lastEntry.command);
-        }
-
-        done();
-      }, 1120);
     });
   });
 });

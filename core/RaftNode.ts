@@ -120,12 +120,6 @@ export class RaftNode extends EventEmitter {
       const peer = this.peers[i];
       peer.requestVote(request, this.voteReceived(currentTerm).bind(this));
     }
-
-    // peers + 1 to count current node.
-    if (this.peers.length == 0) {
-      // single node, become leader, quorum satisfied
-      await this.becomeLeader();
-    }
   }
 
   /**
