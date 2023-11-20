@@ -422,10 +422,6 @@ export class RaftNode extends EventEmitter {
     }
   }
 
-  public replaceNetwork(peerConnections: PeerConnection[]) {
-    this.peers.push(...peerConnections);
-  }
-
   public stopListeners() {
     clearTimeout(this.electionTimeout);
     clearInterval(this.heartbeatInterval);
