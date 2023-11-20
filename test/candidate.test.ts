@@ -1,4 +1,3 @@
-// the goal is just to test the communication layer.
 import {
   MemoryNetwork,
   MemoryPeer,

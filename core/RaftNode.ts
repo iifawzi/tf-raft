@@ -156,13 +156,8 @@ export class RaftNode extends EventEmitter {
       const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
       if (this.electionVotesForMe >= quorum) {
         await this.becomeLeader();
-      } else {
-        // not yet leader.
-      }
-
-      if (this.electionVotesCount - this.electionVotesForMe >= quorum) {
-        // lost election, split-vote occurred or another leader won
-      }
+      } 
+      // else: not yet leader.
     };
   }
 

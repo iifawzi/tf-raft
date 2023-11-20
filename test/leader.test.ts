@@ -1,4 +1,3 @@
-// the goal is just to test the communication layer.
 import {
   MemoryNetwork,
   MemoryPeer,
@@ -80,6 +79,127 @@ describe("Leaders", () => {
         }
         done();
       }, 1000);
+    });
+  });
+
+  describe("Leader replicate logs and dynamically fix its nextIndex for other nodes", () => {
+    it("nextIndex should be decreased if previous log entry doesn't exist and log should be replicated", (done) => {
+      let leaderId: string;
+      let thirdNodeId: string;
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState === STATES.LEADER) {
+            leaderId = node.nodeId;
+            await node.nodeStore.appendEntries([
+              { term: 0, command: "TEST" },
+              { term: 0, command: "TEST2" },
+            ]);
+            break;
+          }
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeId !== leaderId) {
+            for (let j = 0; j < nodes.length; j++) {
+              const thirdNode = nodes[j];
+              if (
+                thirdNode.nodeId !== leaderId &&
+                thirdNode.nodeId !== node.nodeId
+              ) {
+                // reset this third node as if it's new, so when second node becomes leader, we test the consistency checks
+                thirdNodeId = thirdNode.nodeId;
+                await thirdNode.nodeStore.deleteFromIndexMovingForward(0);
+              }
+            }
+            await node.becomeCandidate();
+          }
+        }
+        done();
+      }, 1000);
+
+      setTimeout(async () => {
+        let leaderLastLogIndex;
+        let leaderLastLog;
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState == STATES.LEADER) {
+            leaderLastLogIndex = await node.nodeStore.getLastIndex();
+            leaderLastLog = await node.nodeStore.getLastLogEntry();
+          }
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeId == thirdNodeId) {
+            const log = await node.nodeStore.getLastLogEntry();
+            const lastIndex = await node.nodeStore.getLastIndex();
+            expect(log.command).toEqual(leaderLastLog?.command);
+            expect(log.term).toEqual(leaderLastLog?.term);
+            expect(lastIndex).toEqual(leaderLastLogIndex);
+          }
+        }
+      });
+    });
+  });
+
+  describe("Leader's log should be replicated and follower conflicting logs should be removed", () => {
+    it("follower conflicting logs should be removed", (done) => {
+      let leaderId: string;
+      let thirdNodeId: string;
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState === STATES.LEADER) {
+            leaderId = node.nodeId;
+            await node.nodeStore.appendEntries([
+              { term: 0, command: "TEST" },
+              { term: 0, command: "TEST2" },
+            ]);
+            break;
+          }
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeId !== leaderId) {
+            for (let j = 0; j < nodes.length; j++) {
+              const thirdNode = nodes[j];
+              if (
+                thirdNode.nodeId !== leaderId &&
+                thirdNode.nodeId !== node.nodeId
+              ) {
+                // reset this third node as if it's new, so when second node becomes leader, we test the consistency checks
+                thirdNodeId = thirdNode.nodeId;
+                // Ch.3 P21 - Consistency checks failed.
+                await thirdNode.nodeStore.deleteFromIndexMovingForward(2);
+              }
+            }
+            await node.becomeCandidate();
+          }
+        }
+        done();
+      }, 1000);
+
+      setTimeout(async () => {
+        let leaderLastLogIndex;
+        let leaderLastLog;
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState == STATES.LEADER) {
+            leaderLastLogIndex = await node.nodeStore.getLastIndex();
+            leaderLastLog = await node.nodeStore.getLastLogEntry();
+          }
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeId == thirdNodeId) {
+            const log = await node.nodeStore.getLastLogEntry();
+            const lastIndex = await node.nodeStore.getLastIndex();
+            expect(log.command).toEqual(leaderLastLog?.command);
+            expect(log.term).toEqual(leaderLastLog?.term);
+            expect(lastIndex).toEqual(leaderLastLogIndex);
+          }
+        }
+      });
     });
   });
 
