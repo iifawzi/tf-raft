@@ -203,4 +203,83 @@ describe("Leaders", () => {
       }, 1500);
     });
   });
+
+  describe("Candidate with incomplete log", () => {
+    it("Shouldn't be elected leader", (done) => {
+      let originalLeader: string;
+      let candidateId: string;
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState === STATES.LEADER) {
+            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
+            originalLeader = node.nodeId;
+          }
+        }
+      }, 500);
+
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeId !== originalLeader) {
+            candidateId = node.nodeId;
+            await node.nodeStore.deleteFromIndexMovingForward(0);
+            await node.becomeCandidate();
+            break;
+          }
+        }
+      }, 1000);
+
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState === STATES.LEADER) {
+            expect(node.nodeId !== candidateId).toEqual(true);
+          }
+        }
+
+        done();
+      }, 1120);
+    });
+    it("should step down if discovered peer with higher term in request vote response", (done) => {
+      let originalLeader: string;
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeState === STATES.LEADER) {
+            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
+            originalLeader = node.nodeId;
+          }
+        }
+      }, 500);
+
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.nodeId !== originalLeader) {
+            for (let j = 0; j < nodes.length; j++) {
+              if (nodes[j].nodeId == originalLeader) {
+                jest
+                  .spyOn(nodes[j], "requestVoteHandler")
+                  .mockResolvedValue({ term: 10, voteGranted: false });
+              }
+            }
+            await node.becomeCandidate();
+            break;
+          }
+        }
+      }, 810);
+
+      setTimeout(async () => {
+        for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          expect(await node.nodeStore.getCurrentTerm()).toBeGreaterThanOrEqual(
+            10
+          );
+        }
+
+        done();
+      }, 1500);
+    });
+  });
 });
