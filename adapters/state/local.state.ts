@@ -9,7 +9,7 @@ const persistentKeys = {
   VOTED_FOR: "db.votedFor",
 };
 
-// it uses jsondb for persistent data, and memory for volatile data.
+// it uses jsonDB. for persistent data, and memory for volatile data.
 export class LocalStateManager implements StateManager {
   private db!: JsonDB;
   private volatile: {
