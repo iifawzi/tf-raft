@@ -8,9 +8,9 @@ import { PeerConnection } from "@/interfaces";
 import { MemoryNetwork } from "./memory.network";
 
 export class MemoryPeer implements PeerConnection {
-  constructor(public peerId: string, private network: MemoryNetwork) {
+  private network = MemoryNetwork.getNetwork();
+  constructor(public peerId: string) {
     this.peerId = peerId;
-    this.network = network;
   }
 
   public async requestVote(

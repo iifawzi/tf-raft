@@ -16,9 +16,9 @@ describe("LocalStateManager", () => {
         expect(currentTerm).toEqual(-1);
       });
 
-      it("votedFor should be initialized with '-1'", async () => {
+      it("votedFor should be initialized with null", async () => {
         const votedFor = await stateManager.getVotedFor();
-        expect(votedFor).toEqual(-1);
+        expect(votedFor).toEqual(null);
       });
 
       it("LOG should be initialized with empty array", async () => {

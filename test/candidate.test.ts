@@ -1,284 +1,261 @@
 import {
   MemoryNetwork,
-  MemoryPeer,
   MemoryServer,
 } from "@/adapters/network/memory";
 import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
-import { LogEntry, PeerConnection } from "@/interfaces";
+import { sleep } from "@/utils";
 
-describe("Leaders", () => {
+describe("Candidate", () => {
   console.log = jest.fn();
-  let nodes: RaftNode[] = [];
-  let peers: PeerConnection[] = [];
-  let network: MemoryNetwork;
-  beforeEach(async () => {
-    nodes = [];
-    peers = [];
-    network = new MemoryNetwork();
-    // 1
-    const server1 = new MemoryServer();
-    const state1 = new LocalStateManager("NODE1", "testDB");
-    const node1 = await RaftNode.create("NODE1", server1, state1);
-    nodes.push(node1);
-    const peer1 = new MemoryPeer("NODE1", network);
-    peers.push(peer1);
-
-    // 2
-    const server2 = new MemoryServer();
-    const state2 = new LocalStateManager("NODE2", "testDB");
-    const node2 = await RaftNode.create("NODE2", server2, state2);
-    nodes.push(node2);
-    const peer2 = new MemoryPeer("NODE2", network);
-    peers.push(peer2);
-
-    // 3
-    const server3 = new MemoryServer();
-    const state3 = new LocalStateManager("NODE3", "testDB");
-    const node3 = await RaftNode.create("NODE3", server3, state3);
-    nodes.push(node3);
-    const peer3 = new MemoryPeer("NODE3", network);
-    peers.push(peer3);
-
-    // peers config:
-    node1.addPeers([peer2, peer3]);
-    node2.addPeers([peer1, peer3]);
-    node3.addPeers([peer1, peer2]);
-    // network config:
-    network.addServer("NODE1", server1);
-    network.addServer("NODE2", server2);
-    network.addServer("NODE3", server3);
-  });
-
-  afterEach(() => {
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      node.stopListeners();
-    }
-  });
 
   describe("Only one leader is elected", () => {
-    it("should have only one leader per term", (done) => {
-      let leader: string;
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            leader = node.nodeId;
+    it("should have only one leader per term", async () => {
+      const network = MemoryNetwork.getTestNetwork();
+      // 1
+      const server1 = new MemoryServer();
+      network.addServer("NODE1", server1);
+      const state1 = new LocalStateManager("NODE1", "testDB");
+      const node1 = await RaftNode.create(
+        "NODE1",
+        server1,
+        state1,
+        "MEMORY",
+        true
+      );
+      await sleep(300);
+      // 2
+      const server2 = new MemoryServer();
+      network.addServer("NODE2", server2);
+      const state2 = new LocalStateManager("NODE2", "testDB");
+      const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE2" });
+
+      // 3
+      const server3 = new MemoryServer();
+      network.addServer("NODE3", server3);
+      const state3 = new LocalStateManager("NODE3", "testDB");
+      const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE3" });
+
+      await sleep(300);
+
+      expect(node1.nodeState).toEqual(STATES.LEADER);
+      expect(node2.nodeState).toEqual(STATES.FOLLOWER);
+      expect(node3.nodeState).toEqual(STATES.FOLLOWER);
+
+      node1.stopListeners();
+      node2.stopListeners();
+      node3.stopListeners();
+    });
+  });
+
+  describe("When multiple candidates", () => {
+    it("Only one node become leader eventually", async () => {
+      const network = MemoryNetwork.getTestNetwork();
+      // 1
+      const server1 = new MemoryServer();
+      network.addServer("NODE1", server1);
+      const state1 = new LocalStateManager("NODE1", "testDB");
+      const node1 = await RaftNode.create(
+        "NODE1",
+        server1,
+        state1,
+        "MEMORY",
+        true
+      );
+      await sleep(300);
+      expect(node1.nodeState).toEqual(STATES.LEADER);
+
+      // 2
+      const server2 = new MemoryServer();
+      network.addServer("NODE2", server2);
+      const state2 = new LocalStateManager("NODE2", "testDB");
+      const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE2" });
+
+      // 3
+      const server3 = new MemoryServer();
+      network.addServer("NODE3", server3);
+      const state3 = new LocalStateManager("NODE3", "testDB");
+      const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE3" });
+
+      await sleep(500);
+      const leaderLastLog = await node1.nodeStore.getLastLogEntry();
+      const node2LastLog = await node1.nodeStore.getLastLogEntry();
+      const node3LastLog = await node1.nodeStore.getLastLogEntry();
+
+      expect(node2LastLog.term).toEqual(leaderLastLog.term);
+      expect(node2LastLog.command).toEqual(leaderLastLog.command);
+      expect(node3LastLog.term).toEqual(node3LastLog.term);
+      expect(node3LastLog.command).toEqual(node3LastLog.command);
+
+      node1.stopListeners();
+
+      await sleep(500);
+
+      const states = [node1.nodeState, node2.nodeState, node3.nodeState];
+
+      let leaderFound = false;
+      let multipleLeader = false;
+      for (let i = 0; i < states.length; i++) {
+        if (states[i] === STATES.LEADER) {
+          if (!multipleLeader) {
+            leaderFound = true;
+          } else {
+            multipleLeader = true;
             break;
           }
         }
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== leader) {
-            expect(node.nodeState).toEqual(STATES.FOLLOWER);
-          }
-        }
-        done();
-      }, 1000);
-    });
+      }
 
-    describe("Multiple candidates", () => {
-      it("Only one node become leader eventually", (done) => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.FOLLOWER) {
-            node.becomeCandidate();
-          }
-        }
-        let leaderFound = false;
-        let multipleLeaders = false;
-        setTimeout(async () => {
-          for (let i = 0; i < nodes.length; i++) {
-            const node = nodes[i];
-            if (node.nodeState === STATES.LEADER) {
-              if (leaderFound) {
-                multipleLeaders = true;
-                break;
-              } else {
-                leaderFound = true;
-              }
-            }
-          }
-          expect(multipleLeaders).toEqual(false);
-          done();
-        }, 1500);
-      });
+      expect(multipleLeader).toEqual(false);
+      expect(leaderFound).toEqual(true);
+
+      node1.stopListeners();
+      node2.stopListeners();
+      node3.stopListeners();
     });
   });
 
   describe("Step down if discovered peer with higher term", () => {
-    it("should step down if discovered peer with higher term in request vote handler", (done) => {
-      let originalLeader: string;
+    it("should step down if discovered peer with higher term in request vote handler", async () => {
+      const network = MemoryNetwork.getTestNetwork();
+      // 1
+      const server1 = new MemoryServer();
+      network.addServer("NODE1", server1);
+      const state1 = new LocalStateManager("NODE1", "testDB");
+      const node1 = await RaftNode.create(
+        "NODE1",
+        server1,
+        state1,
+        "MEMORY",
+        true
+      );
+      await sleep(300);
+      expect(node1.nodeState).toEqual(STATES.LEADER);
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-            originalLeader = node.nodeId;
-          }
-        }
-      }, 500);
+      // 2
+      const server2 = new MemoryServer();
+      network.addServer("NODE2", server2);
+      const state2 = new LocalStateManager("NODE2", "testDB");
+      const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE2" });
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== originalLeader) {
-            await node.becomeCandidate();
-            break;
-          }
-        }
-      }, 810);
+      await sleep(500);
+      const leaderLastLog = await node1.nodeStore.getLastLogEntry();
+      const node2LastLog = await node2.nodeStore.getLastLogEntry();
 
-      setTimeout(async () => {
-        let lastEntry!: LogEntry;
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId === originalLeader) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(1);
-            expect(node.nodeState).toEqual(STATES.FOLLOWER);
-          }
+      // LOGS ARE THE SAME, ANY NODE CAN BE LEADER NOW.
+      expect(node2LastLog.term).toEqual(leaderLastLog.term);
+      expect(node2LastLog.command).toEqual(leaderLastLog.command);
 
-          if (node.nodeState == STATES.LEADER) {
-            const lastLog = await node.nodeStore.getLastLogEntry();
-            lastEntry = lastLog;
-          }
-        }
+      // node2 will elect itself for the leadership, and node1 will step down.
+      node1.stopListeners();
 
-        // Validate that all nodes have the correct term and logs replicated
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          expect(await node.nodeStore.getCurrentTerm()).toEqual(1);
-          expect((await node.nodeStore.getLastLogEntry()).term).toEqual(
-            lastEntry.term
-          );
-          expect((await node.nodeStore.getLastLogEntry()).command).toEqual(
-            lastEntry.command
-          );
-        }
+      // LEADER STEPS DOWN
+      await sleep(1000);
+      expect(node2.nodeState).toEqual(STATES.LEADER);
+      expect(node1.nodeState).toEqual(STATES.FOLLOWER);
 
-        done();
-      }, 1120);
+      // Validate that all nodes have the correct term and logs replicated
+      const leaderLastLog2 = await node1.nodeStore.getLastLogEntry();
+      const node2LastLog2 = await node2.nodeStore.getLastLogEntry();
+      // LOGS ARE THE SAME, ANY NODE CAN BE LEADER NOW.
+      expect(node2LastLog2.term).toEqual(leaderLastLog2.term);
+      expect(node2LastLog2.command).toEqual(leaderLastLog2.command);
+
+      node1.stopListeners();
+      node2.stopListeners();
     });
-    it("should step down if discovered peer with higher term in request vote response", (done) => {
-      let originalLeader: string;
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-            originalLeader = node.nodeId;
-          }
-        }
-      }, 500);
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== originalLeader) {
-            for (let j = 0; j < nodes.length; j++) {
-              if (nodes[j].nodeId == originalLeader) {
-                jest
-                  .spyOn(nodes[j], "requestVoteHandler")
-                  .mockResolvedValue({ term: 10, voteGranted: false });
-              }
-            }
-            await node.becomeCandidate();
-            break;
-          }
-        }
-      }, 810);
+    it("should step down if discovered peer with higher term in request vote response", async () => {
+      const network = MemoryNetwork.getTestNetwork();
+      // 1
+      const server1 = new MemoryServer();
+      network.addServer("NODE1", server1);
+      const state1 = new LocalStateManager("NODE1", "testDB");
+      const node1 = await RaftNode.create(
+        "NODE1",
+        server1,
+        state1,
+        "MEMORY",
+        true
+      );
+      await sleep(500);
+      expect(node1.nodeState).toEqual(STATES.LEADER);
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          expect(await node.nodeStore.getCurrentTerm()).toBeGreaterThanOrEqual(
-            10
-          );
-        }
+      // 2
+      const server2 = new MemoryServer();
+      network.addServer("NODE2", server2);
+      const state2 = new LocalStateManager("NODE2", "testDB");
+      const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE2" });
 
-        done();
-      }, 1500);
+      // 3
+      const server3 = new MemoryServer();
+      network.addServer("NODE3", server3);
+      const state3 = new LocalStateManager("NODE3", "testDB");
+      const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE3" });
+
+      await sleep(1000);
+
+      expect(node1.nodeState).toEqual(STATES.LEADER);
+      expect(node2.nodeState).toEqual(STATES.FOLLOWER);
+      expect(node3.nodeState).toEqual(STATES.FOLLOWER);
+      node1.stopListeners();
+
+      await node1.nodeStore.setCurrentTerm(4);
+      await node3.nodeStore.setCurrentTerm(4);
+
+      // node 2 will receive responses with term higher than its term, will step down to follower.
+      node2.becomeCandidate();
+      await sleep(1000);
+
+      expect(node2.nodeState).toEqual(STATES.FOLLOWER);
+      node1.stopListeners();
+      node2.stopListeners();
+      node3.stopListeners();
     });
   });
 
   describe("Candidate with incomplete log", () => {
-    it("Shouldn't be elected leader", (done) => {
-      let originalLeader: string;
-      let candidateId: string;
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-            originalLeader = node.nodeId;
-          }
-        }
-      }, 500);
+    it("Shouldn't be elected leader", async () => {
+      const network = MemoryNetwork.getTestNetwork();
+      // 1
+      const server1 = new MemoryServer();
+      network.addServer("NODE1", server1);
+      const state1 = new LocalStateManager("NODE1", "testDB");
+      const node1 = await RaftNode.create(
+        "NODE1",
+        server1,
+        state1,
+        "MEMORY",
+        true
+      );
+      await sleep(500);
+      expect(node1.nodeState).toEqual(STATES.LEADER);
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== originalLeader) {
-            candidateId = node.nodeId;
-            await node.nodeStore.deleteFromIndexMovingForward(0);
-            await node.becomeCandidate();
-            break;
-          }
-        }
-      }, 1000);
+      // 2
+      const server2 = new MemoryServer();
+      network.addServer("NODE2", server2);
+      const state2 = new LocalStateManager("NODE2", "testDB");
+      const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+      node1.addServerHandler({ newServer: "NODE2" });
+      await sleep(1000);
+      
+      node1.stopListeners();
+      await node2.nodeStore.deleteFromIndexMovingForward(0);
+      await node2.becomeCandidate();
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            expect(node.nodeId !== candidateId).toEqual(true);
-          }
-        }
+      await sleep(1000);
 
-        done();
-      }, 1120);
-    });
-    it("should step down if discovered peer with higher term in request vote response", (done) => {
-      let originalLeader: string;
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeState === STATES.LEADER) {
-            expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-            originalLeader = node.nodeId;
-          }
-        }
-      }, 500);
+      expect(node2.nodeState).toEqual(STATES.FOLLOWER);
 
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          if (node.nodeId !== originalLeader) {
-            for (let j = 0; j < nodes.length; j++) {
-              if (nodes[j].nodeId == originalLeader) {
-                jest
-                  .spyOn(nodes[j], "requestVoteHandler")
-                  .mockResolvedValue({ term: 10, voteGranted: false });
-              }
-            }
-            await node.becomeCandidate();
-            break;
-          }
-        }
-      }, 810);
-
-      setTimeout(async () => {
-        for (let i = 0; i < nodes.length; i++) {
-          const node = nodes[i];
-          expect(await node.nodeStore.getCurrentTerm()).toBeGreaterThanOrEqual(
-            10
-          );
-        }
-
-        done();
-      }, 1500);
+      node1.stopListeners();
+      node2.stopListeners();
     });
   });
 });

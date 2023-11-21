@@ -1,4 +1,4 @@
-import { MemoryPeer, MemoryServer } from "@/adapters/network/memory";
+import { MemoryServer } from "@/adapters/network/memory";
 import { MemoryNetwork } from "@/adapters/network/memory/memory.network";
 import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
@@ -7,55 +7,78 @@ export class FixedCluster {
   private nodes: RaftNode[] = [];
 
   public async start() {
-    const network = new MemoryNetwork();
+    const network = MemoryNetwork.getNetwork();
 
     // 1
+    const nodeIdentifier1 = "NODE1";
     const server1 = new MemoryServer();
-    const state1 = new LocalStateManager("NODE1");
-    const node1 =  await RaftNode.create("NODE1", server1, state1);
+    network.addServer(nodeIdentifier1, server1);
+    const state1 = new LocalStateManager(nodeIdentifier1);
+    const node1 = await RaftNode.create(
+      nodeIdentifier1,
+      server1,
+      state1,
+      "MEMORY"
+    );
     this.nodes.push(node1);
-    const peer1 = new MemoryPeer("NODE1", network);
 
-    // 2
-    const server2 = new MemoryServer();
-    const state2 = new LocalStateManager("NODE2");
-    const node2 = await RaftNode.create("NODE2", server2, state2);
-    this.nodes.push(node2);
-    const peer2 = new MemoryPeer("NODE2", network);
+    setTimeout(async () => {
+      // 2
+      const nodeIdentifier2 = "NODE2";
+      const server2 = new MemoryServer();
+      network.addServer(nodeIdentifier2, server2);
+      const state2 = new LocalStateManager(nodeIdentifier2);
+      const node2 = await RaftNode.create(
+        nodeIdentifier2,
+        server2,
+        state2,
+        "MEMORY"
+      );
+      this.nodes.push(node2);
+      node1.addServerHandler({ newServer: "NODE2" });
 
-    // 3
-    const server3 = new MemoryServer();
-    const state3 = new LocalStateManager("NODE3");
-    const node3 = await RaftNode.create("NODE3", server3, state3);
-    this.nodes.push(node3);
-    const peer3 = new MemoryPeer("NODE3", network);
+      // 3
+      const nodeIdentifier3 = "NODE3";
+      const server3 = new MemoryServer();
+      network.addServer(nodeIdentifier3, server3);
+      const state3 = new LocalStateManager(nodeIdentifier3);
+      const node3 = await RaftNode.create(
+        nodeIdentifier3,
+        server3,
+        state3,
+        "MEMORY"
+      );
+      this.nodes.push(node3);
+      node1.addServerHandler({ newServer: nodeIdentifier3 });
 
-    // 4:
-    const server4 = new MemoryServer();
-    const state4 = new LocalStateManager("NODE4");
-    const node4 = await RaftNode.create("NODE4", server4, state4);
-    this.nodes.push(node4);
-    const peer4 = new MemoryPeer("NODE4", network);
+      // 4:
+      const nodeIdentifier4 = "NODE4";
+      const server4 = new MemoryServer();
+      network.addServer(nodeIdentifier4, server4);
+      const state4 = new LocalStateManager(nodeIdentifier4);
+      const node4 = await RaftNode.create(
+        nodeIdentifier4,
+        server4,
+        state4,
+        "MEMORY"
+      );
+      this.nodes.push(node4);
+      node1.addServerHandler({ newServer: nodeIdentifier4 });
 
-    // 5
-    const server5 = new MemoryServer();
-    const state5 = new LocalStateManager("NODE5");
-    const node5 = await RaftNode.create("NODE5", server5, state5);
-    this.nodes.push(node5);
-    const peer5 = new MemoryPeer("NODE5", network);
-
-    // peers config:
-    node1.addPeers([peer2, peer3, peer4, peer5]);
-    node2.addPeers([peer1, peer3, peer4, peer5]);
-    node3.addPeers([peer1, peer2, peer4, peer5]);
-    node4.addPeers([peer1, peer2, peer3, peer5]);
-    node5.addPeers([peer1, peer2, peer3, peer4]);
-    // network config:
-    network.addServer("NODE1", server1);
-    network.addServer("NODE2", server2);
-    network.addServer("NODE3", server3);
-    network.addServer("NODE4", server4);
-    network.addServer("NODE5", server5);
+      // 5
+      const nodeIdentifier5 = "NODE5";
+      const server5 = new MemoryServer();
+      network.addServer(nodeIdentifier5, server5);
+      const state5 = new LocalStateManager(nodeIdentifier5);
+      const node5 = await RaftNode.create(
+        nodeIdentifier5,
+        server5,
+        state5,
+        "MEMORY"
+      );
+      this.nodes.push(node5);
+      node1.addServerHandler({ newServer: nodeIdentifier5 });
+    }, 310);
   }
 
   public getLeader(): RaftNode {

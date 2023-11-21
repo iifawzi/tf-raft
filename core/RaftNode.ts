@@ -3,15 +3,18 @@ import EventEmitter from "events";
 import { getRandomTimeout } from "@/utils";
 import { RAFT_CORE_EVENTS, STATES } from "./constants";
 import {
+  AddServerRequest,
+  AddServerResponse,
   AppendEntryRequest,
   AppendEntryResponse,
+  MEMBERSHIP_CHANGES_RESPONSES,
   RequestVoteRequest,
   RequestVoteResponse,
 } from "@/dtos";
+import { MemoryPeer } from "@/adapters/network/memory";
 export class RaftNode extends EventEmitter {
   private peers: PeerConnection[] = [];
   private state!: STATES;
-
   private electionVotesForMe: number = 0;
   private electionVotesCount: number = 0;
   private electionTimeout: NodeJS.Timeout | undefined;
@@ -20,22 +23,38 @@ export class RaftNode extends EventEmitter {
   private constructor(
     private readonly id: string,
     private readonly server: Server,
-    private readonly stateManager: StateManager
+    private readonly stateManager: StateManager,
+    private readonly protocol: "RPC" | "MEMORY",
+    private readonly leader: boolean
   ) {
     super();
     this.id = id;
     this.server = server;
     this.server.listen(this);
-    this.becomeFollower();
+    if (this.leader) {
+      // it will start as follower, and it will be elected leader.
+      this.becomeFollower();
+    }
   }
 
   public static async create(
     id: string,
     server: Server,
-    stateManager: StateManager
+    stateManager: StateManager,
+    protocol: "RPC" | "MEMORY",
+    leader = false
   ): Promise<RaftNode> {
     await stateManager.start();
-    return new RaftNode(id, server, stateManager);
+    // start the node with current configuration so it can be caught up by future leaders.
+    if (leader) {
+      await stateManager.appendEntries([
+        {
+          term: 0,
+          command: { type: "MEMBERSHIP_ADD", data: "NODE1" },
+        },
+      ]);
+    }
+    return new RaftNode(id, server, stateManager, protocol, leader);
   }
 
   /**********************
@@ -75,16 +94,16 @@ export class RaftNode extends EventEmitter {
   }
 
   private async becomeLeader() {
-    this.changeState(STATES.LEADER);
     clearTimeout(this.electionTimeout);
+    this.changeState(STATES.LEADER);
     await this.stateManager.reset();
-    this.stateManager.appendEntries([
+    await this.stateManager.appendEntries([
       {
         term: await this.stateManager.getCurrentTerm(),
         command: `no-op-${this.nodeId}`,
       },
     ]);
-    this.leaderHeartbeats();
+    await this.leaderHeartbeats();
   }
 
   private async higherTermDiscovered(term: number) {
@@ -120,6 +139,11 @@ export class RaftNode extends EventEmitter {
       const peer = this.peers[i];
       peer.requestVote(request, this.voteReceived(currentTerm).bind(this));
     }
+
+    if (this.peers.length === 0) {
+      // single node will become leader;
+      this.becomeLeader();
+    }
   }
 
   /**
@@ -154,7 +178,7 @@ export class RaftNode extends EventEmitter {
 
       // peers + 1 to count current node.
       const quorum = Math.floor((this.peers.length + 1) / 2) + 1;
-      if (this.electionVotesForMe >= quorum) {
+      if (this.electionVotesForMe >= quorum && this.state == STATES.CANDIDATE) {
         await this.becomeLeader();
       }
       // else: not yet leader.
@@ -164,8 +188,12 @@ export class RaftNode extends EventEmitter {
   /**********************
   Appending Entries & Heartbeats:
   **********************/
-  private async sendHeartbeats() {
-    console.log(`${this.nodeId} sending heartbeat`);
+  public async sendHeartbeats() {
+    console.log(
+      `${this.nodeId} sending heartbeat ${JSON.stringify(
+        this.stateManager.getNextIndexes()
+      )}`
+    );
     let currentTerm = await this.stateManager.getCurrentTerm();
     let leaderCommit = this.stateManager.getCommitIndex();
     for (let i = 0; i < this.peers.length; i++) {
@@ -238,6 +266,8 @@ export class RaftNode extends EventEmitter {
           }
         }
       }
+      // TODO:: APPLY LOGS
+      await this.applyLogs();
     }
   }
 
@@ -260,11 +290,11 @@ export class RaftNode extends EventEmitter {
 
       if (receiverResponse.success) {
         if (entries.length) {
-          const nextIndex =
-            this.stateManager.getNextIndex(peerId) + entries.length;
+          const currentNext = this.stateManager.getNextIndex(peerId);
+          const nextIndex = currentNext + entries.length;
           this.stateManager.setNextIndex(peerId, nextIndex);
           console.log(
-            `next of peer ${peerId} is now ${this.stateManager.getNextIndex(
+            `next of peer ${peerId} was ${currentNext} and is now ${this.stateManager.getNextIndex(
               peerId
             )}`
           );
@@ -281,7 +311,70 @@ export class RaftNode extends EventEmitter {
   }
 
   /**********************
-  RPCs Handlers
+  Membership changes 
+  **********************/
+
+  public async addServerHandler(
+    request: AddServerRequest
+  ): Promise<AddServerResponse> {
+    const response = {
+      status: MEMBERSHIP_CHANGES_RESPONSES.OK,
+      leaderHint: "",
+    };
+    if (this.nodeState !== STATES.LEADER) {
+      // TODO:: hint the leaderId/port
+      response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
+      return response;
+    }
+
+    const currentTerm = await this.stateManager.getCurrentTerm();
+    await this.stateManager.appendEntries([
+      {
+        term: currentTerm,
+        command: { type: "MEMBERSHIP_ADD", data: request.newServer },
+      },
+    ]);
+    this.addPeer(request.newServer);
+    return response;
+  }
+
+  private addPeer(serverIdentifier: string) {
+    let peer!: PeerConnection;
+    const peerIndex = this.peers.findIndex(
+      (peer) => peer.peerId == serverIdentifier
+    );
+    if (peerIndex > -1) {
+      this.peers.splice(peerIndex, 1);
+    }
+
+    if (this.protocol == "MEMORY") {
+      peer = new MemoryPeer(serverIdentifier);
+    }
+
+    this.stateManager.setNextIndex(peer.peerId, 0);
+    this.stateManager.setMatchIndex(peer.peerId, -1);
+    this.peers.push(peer);
+  }
+
+  public applyMembershipAdd(serverIdentifier: string) {
+    console.log(`${this.nodeId} is applying peer addition - adding: ${serverIdentifier}`)
+    let peer!: PeerConnection;
+    const peerIndex = this.peers.findIndex(
+      (peer) => peer.peerId == serverIdentifier
+    );
+    if (peerIndex > -1) {
+      this.peers.splice(peerIndex, 1);
+    }
+
+    if (this.protocol == "MEMORY") {
+      peer = new MemoryPeer(serverIdentifier);
+    }
+
+    this.peers.push(peer);
+  }
+
+  /**********************
+  Leader Election and Log Replication
   **********************/
   public async requestVoteHandler(
     requester: RequestVoteRequest
@@ -376,6 +469,7 @@ export class RaftNode extends EventEmitter {
       );
     }
 
+    await this.applyLogs();
     return response;
   }
 
@@ -406,22 +500,43 @@ export class RaftNode extends EventEmitter {
     if (this.nodeState == STATES.LEADER) {
       const currentTerm = await this.stateManager.getCurrentTerm();
       await this.stateManager.appendEntries([{ term: currentTerm, command }]);
+    } else {
+      // TODO:: REPLY TO CLIENT WITH THE LEADER ID;
     }
   }
   /**********************
    Fixed membership configurator & utils
    **********************/
-  public addPeers(peerConnections: PeerConnection[]) {
-    this.peers.push(...peerConnections);
-    for (let i = 0; i < peerConnections.length; i++) {
-      const peer = peerConnections[i];
-      this.stateManager.setNextIndex(peer.peerId, 0);
-      this.stateManager.setMatchIndex(peer.peerId, -1);
-    }
-  }
-
   public stopListeners() {
     clearTimeout(this.electionTimeout);
     clearInterval(this.heartbeatInterval);
+  }
+
+  /**********************
+   LOG APPLIER
+   **********************/
+  private async applyLogs() {
+    const commitIndex = this.stateManager.getCommitIndex();
+    let lastApplied = this.stateManager.getLastApplied();
+    if (commitIndex > lastApplied) {
+      const logs = await this.stateManager.getLog();
+      const logsToBeApplied = logs.slice(lastApplied + 1);
+
+      for (let i = 0; i < logsToBeApplied.length; i++) {
+        const log = logsToBeApplied[i];
+        this.logApplier(log);
+        lastApplied += 1;
+        this.stateManager.setLastApplied(lastApplied);
+      }
+    }
+  }
+
+  private logApplier(logEntry: LogEntry) {
+    if (
+      logEntry.command?.type == "MEMBERSHIP_ADD" &&
+      logEntry.command?.data !== this.nodeId
+    ) {
+      this.applyMembershipAdd(logEntry.command.data);
+    }
   }
 }

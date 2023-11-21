@@ -43,7 +43,7 @@ export class LocalStateManager implements StateManager {
     );
     await this.db.push(persistentKeys.CURRENT_TERM, -1);
     await this.db.push(persistentKeys.LOG, []);
-    await this.db.push(persistentKeys.VOTED_FOR, -1);
+    await this.db.push(persistentKeys.VOTED_FOR, null);
   }
 
   ///// Persistent /////
@@ -136,7 +136,7 @@ export class LocalStateManager implements StateManager {
     return this.volatile.nextIndex;
   }
   public setNextIndex(nodeId: string, value: number): void {
-    console.log(`setting next of node ${nodeId} to ${value}`)
+    console.log(`${this.nodeId} setting next of node ${nodeId} to ${value}`)
     this.volatile.nextIndex[nodeId] = value;
   }
   public getMatchIndex(nodeId: string): number {
