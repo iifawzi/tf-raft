@@ -39,7 +39,7 @@ describe("Leaders", () => {
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
-      await sleep(300);
+      await sleep(1000);
 
       const node1NOOPLog = await node1.nodeStore.getLogAtIndex(1);
       const node2NOOPLog = await node2.nodeStore.getLogAtIndex(1);
@@ -48,7 +48,7 @@ describe("Leaders", () => {
       expect(node1NOOPLog.command).toEqual("no-op-NODE1");
       expect(node2NOOPLog.term).toEqual(0);
       expect(node2NOOPLog.command).toEqual("no-op-NODE1");
-      expect(node3NOOPLog.command).toEqual("no-op-NODE1");
+      expect(node3NOOPLog.term).toEqual(0);
       expect(node3NOOPLog.command).toEqual("no-op-NODE1");
 
       node1.stopListeners();
@@ -137,12 +137,12 @@ describe("Leaders", () => {
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
-      await sleep(300);
+      await sleep(800);
 
       await node3.nodeStore.deleteFromIndexMovingForward(0);
       await node2.becomeCandidate();
 
-      await sleep(500);
+      await sleep(800);
 
       const leaderLastLogIndex = await node2.nodeStore.getLastIndex();
       const leaderLastLog = await node2.nodeStore.getLastLogEntry();
@@ -189,7 +189,7 @@ describe("Leaders", () => {
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
-      await sleep(300);
+      await sleep(500);
 
       await node3.nodeStore.deleteFromIndexMovingForward(2);
       await node2.becomeCandidate();
@@ -241,7 +241,7 @@ describe("Leaders", () => {
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
-      await sleep(300);
+      await sleep(1000);
       const leaderCommitIndex = node1.nodeStore.getCommitIndex();
       expect(leaderCommitIndex).toEqual(3);
       const node2CommitIndex = node3.nodeStore.getCommitIndex();

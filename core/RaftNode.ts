@@ -1,18 +1,18 @@
 import { LogEntry, PeerConnection, Server, StateManager } from "@/interfaces";
-import EventEmitter from "events";
 import { getRandomTimeout } from "@/utils";
-import { RAFT_CORE_EVENTS, STATES } from "./constants";
+import { STATES } from "./constants";
 import {
   AddServerRequest,
-  AddServerResponse,
   AppendEntryRequest,
   AppendEntryResponse,
   MEMBERSHIP_CHANGES_RESPONSES,
+  MembershipChangeResponse,
+  RemoveServerRequest,
   RequestVoteRequest,
   RequestVoteResponse,
 } from "@/dtos";
 import { MemoryPeer } from "@/adapters/network/memory";
-export class RaftNode extends EventEmitter {
+export class RaftNode {
   private peers: PeerConnection[] = [];
   private state!: STATES;
   private electionVotesForMe: number = 0;
@@ -27,7 +27,6 @@ export class RaftNode extends EventEmitter {
     private readonly protocol: "RPC" | "MEMORY",
     private readonly leader: boolean
   ) {
-    super();
     this.id = id;
     this.server = server;
     this.server.listen(this);
@@ -316,7 +315,7 @@ export class RaftNode extends EventEmitter {
 
   public async addServerHandler(
     request: AddServerRequest
-  ): Promise<AddServerResponse> {
+  ): Promise<MembershipChangeResponse> {
     const response = {
       status: MEMBERSHIP_CHANGES_RESPONSES.OK,
       leaderHint: "",
@@ -338,6 +337,30 @@ export class RaftNode extends EventEmitter {
     return response;
   }
 
+  public async removeServerHandler(
+    request: RemoveServerRequest
+  ): Promise<MembershipChangeResponse> {
+    const response = {
+      status: MEMBERSHIP_CHANGES_RESPONSES.OK,
+      leaderHint: "",
+    };
+    if (this.nodeState !== STATES.LEADER) {
+      // TODO:: hint the leaderId/port
+      response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
+      return response;
+    }
+
+    const currentTerm = await this.stateManager.getCurrentTerm();
+    await this.stateManager.appendEntries([
+      {
+        term: currentTerm,
+        command: { type: "MEMBERSHIP_REMOVE", data: request.oldServer },
+      },
+    ]);
+    this.removePeer(request.oldServer);
+    return response;
+  }
+
   private addPeer(serverIdentifier: string) {
     let peer!: PeerConnection;
     const peerIndex = this.peers.findIndex(
@@ -356,6 +379,15 @@ export class RaftNode extends EventEmitter {
     this.peers.push(peer);
   }
 
+  private removePeer(serverIdentifier: string) {
+    const peerIndex = this.peers.findIndex(
+      (peer) => peer.peerId == serverIdentifier
+    );
+    if (peerIndex > -1) {
+      this.peers.splice(peerIndex, 1);
+    }
+  }
+
   public applyMembershipAdd(serverIdentifier: string) {
     console.log(`${this.nodeId} is applying peer addition - adding: ${serverIdentifier}`)
     let peer!: PeerConnection;
@@ -371,6 +403,15 @@ export class RaftNode extends EventEmitter {
     }
 
     this.peers.push(peer);
+  }
+
+  public applyMembershipRemove(serverIdentifier: string) {
+    const peerIndex = this.peers.findIndex(
+      (peer) => peer.peerId == serverIdentifier
+    );
+    if (peerIndex > -1) {
+      this.peers.splice(peerIndex, 1);
+    }
   }
 
   /**********************
@@ -478,7 +519,6 @@ export class RaftNode extends EventEmitter {
    **********************/
   private changeState(state: STATES) {
     this.state = state;
-    this.emit(RAFT_CORE_EVENTS.STATE, state);
   }
 
   get nodeId() {
@@ -531,12 +571,17 @@ export class RaftNode extends EventEmitter {
     }
   }
 
+  // TODO:: Improve
   private logApplier(logEntry: LogEntry) {
     if (
       logEntry.command?.type == "MEMBERSHIP_ADD" &&
       logEntry.command?.data !== this.nodeId
     ) {
       this.applyMembershipAdd(logEntry.command.data);
+    } else if (
+      logEntry.command?.type == "MEMBERSHIP_REMOVE"
+    ) {
+      this.applyMembershipRemove(logEntry.command.data);
     }
   }
 }

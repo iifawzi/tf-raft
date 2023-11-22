@@ -7,7 +7,11 @@ export interface AddServerRequest {
   newServer: string;
 }
 
-export interface AddServerResponse {
+export interface RemoveServerRequest {
+  oldServer: string;
+}
+
+export interface MembershipChangeResponse {
   status: MEMBERSHIP_CHANGES_RESPONSES;
   leaderHint: string;
 }

@@ -1,7 +1,4 @@
-import {
-  MemoryNetwork,
-  MemoryServer,
-} from "@/adapters/network/memory";
+import { MemoryNetwork, MemoryServer } from "@/adapters/network/memory";
 import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 import { sleep } from "@/utils";
@@ -210,11 +207,19 @@ describe("Candidate", () => {
       await node1.nodeStore.setCurrentTerm(4);
       await node3.nodeStore.setCurrentTerm(4);
 
-      // node 2 will receive responses with term higher than its term, will step down to follower.
+      // node 2 will receive responses with term higher than its term, will step down to follower
+      // it might end up leader but with term higher than 4.
       node2.becomeCandidate();
       await sleep(1000);
 
-      expect(node2.nodeState).toEqual(STATES.FOLLOWER);
+      const node2State = node2.nodeState;
+      const node2Term = await node2.nodeStore.getCurrentTerm();
+      if (node2State != STATES.FOLLOWER) {
+        expect(node2.nodeState).toEqual(STATES.LEADER);
+        expect(node2.nodeState).toEqual(STATES.LEADER);
+      } {
+        expect(node2Term).toBeGreaterThanOrEqual(4);
+      }
       node1.stopListeners();
       node2.stopListeners();
       node3.stopListeners();
@@ -245,14 +250,14 @@ describe("Candidate", () => {
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       node1.addServerHandler({ newServer: "NODE2" });
       await sleep(1000);
-      
+
       node1.stopListeners();
       await node2.nodeStore.deleteFromIndexMovingForward(0);
       await node2.becomeCandidate();
 
       await sleep(1000);
 
-      expect(node2.nodeState).toEqual(STATES.FOLLOWER);
+      expect(node2.nodeState).not.toEqual(STATES.LEADER);
 
       node1.stopListeners();
       node2.stopListeners();

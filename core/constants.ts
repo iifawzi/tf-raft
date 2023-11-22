@@ -3,7 +3,3 @@ export enum STATES {
     CANDIDATE = 'CANDIDATE',
     LEADER =  'LEADER',
 }
-
-export enum RAFT_CORE_EVENTS {
-    STATE = 'STATE'
-}
