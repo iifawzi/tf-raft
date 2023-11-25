@@ -12,6 +12,7 @@ import {
   RequestVoteResponse,
 } from "@/dtos";
 import { MemoryPeer } from "@/adapters/network/memory";
+import { membershipAddCMD, membershipRemoveCMD, noOpCMD } from "./commands";
 export class RaftNode {
   private peers: PeerConnection[] = [];
   private state!: STATES;
@@ -49,7 +50,7 @@ export class RaftNode {
       await stateManager.appendEntries([
         {
           term: 0,
-          command: { type: "MEMBERSHIP_ADD", data: "NODE1" },
+          command: membershipAddCMD(id),
         },
       ]);
     }
@@ -99,7 +100,7 @@ export class RaftNode {
     await this.stateManager.appendEntries([
       {
         term: await this.stateManager.getCurrentTerm(),
-        command: `no-op-${this.nodeId}`,
+        command: noOpCMD(this.nodeId),
       },
     ]);
     await this.leaderHeartbeats();
@@ -265,7 +266,6 @@ export class RaftNode {
           }
         }
       }
-      // TODO:: APPLY LOGS
       await this.applyLogs();
     }
   }
@@ -330,7 +330,7 @@ export class RaftNode {
     await this.stateManager.appendEntries([
       {
         term: currentTerm,
-        command: { type: "MEMBERSHIP_ADD", data: request.newServer },
+        command: membershipAddCMD(request.newServer),
       },
     ]);
     this.addPeer(request.newServer);
@@ -354,7 +354,7 @@ export class RaftNode {
     await this.stateManager.appendEntries([
       {
         term: currentTerm,
-        command: { type: "MEMBERSHIP_REMOVE", data: request.oldServer },
+        command: membershipRemoveCMD(request.oldServer),
       },
     ]);
     this.removePeer(request.oldServer);
