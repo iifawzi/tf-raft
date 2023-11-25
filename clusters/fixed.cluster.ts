@@ -35,7 +35,7 @@ export class FixedCluster {
         "MEMORY"
       );
       this.nodes.push(node2);
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const nodeIdentifier3 = "NODE3";
@@ -49,7 +49,7 @@ export class FixedCluster {
         "MEMORY"
       );
       this.nodes.push(node3);
-      node1.addServerHandler({ newServer: nodeIdentifier3 });
+      server1.AddServer({ newServer: nodeIdentifier3 });
 
       // 4:
       const nodeIdentifier4 = "NODE4";
@@ -63,7 +63,7 @@ export class FixedCluster {
         "MEMORY"
       );
       this.nodes.push(node4);
-      node1.addServerHandler({ newServer: nodeIdentifier4 });
+      server1.AddServer({ newServer: nodeIdentifier4 });
 
       // 5
       const nodeIdentifier5 = "NODE5";
@@ -77,7 +77,7 @@ export class FixedCluster {
         "MEMORY"
       );
       this.nodes.push(node5);
-      node1.addServerHandler({ newServer: nodeIdentifier5 });
+      server1.AddServer({ newServer: nodeIdentifier5 });
     }, 310);
   }
 

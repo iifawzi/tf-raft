@@ -60,4 +60,20 @@ export class gRPCServer implements Server {
     callback(null, grpcResponse);
   }
 
+  async AddServer(call: grpc.ServerUnaryCall<messages.AddServerRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.MembershipChangeResponse>) {
+    const response = await this.node.addServerHandler(call.request);
+    const grpcResponse = new messages.MembershipChangeResponse(); 
+    grpcResponse.setStatus(response.status);
+    grpcResponse.setLeaderHint(response.leaderHint);
+    callback(null, grpcResponse);
+  }
+  
+  async RemoveServer(call: grpc.ServerUnaryCall<messages.RemoveServerRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.MembershipChangeResponse>) {
+    const response = await this.node.removeServerHandler(call.request);
+    const grpcResponse = new messages.MembershipChangeResponse(); 
+    grpcResponse.setStatus(response.status);
+    grpcResponse.setLeaderHint(response.leaderHint);
+    callback(null, grpcResponse);
+  }
+
 }

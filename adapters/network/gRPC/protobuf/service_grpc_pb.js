@@ -4,6 +4,17 @@
 var grpc = require('@grpc/grpc-js');
 var adapters_network_grpc_protobuf_service_pb = require('./service_pb.js');
 
+function serialize_AddServerRequest(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.AddServerRequest)) {
+    throw new Error('Expected argument of type AddServerRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_AddServerRequest(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.AddServerRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_AppendEntriesRequest(arg) {
   if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.AppendEntriesRequest)) {
     throw new Error('Expected argument of type AppendEntriesRequest');
@@ -24,6 +35,28 @@ function serialize_AppendEntriesResponse(arg) {
 
 function deserialize_AppendEntriesResponse(buffer_arg) {
   return adapters_network_grpc_protobuf_service_pb.AppendEntriesResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_MembershipChangeResponse(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse)) {
+    throw new Error('Expected argument of type MembershipChangeResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_MembershipChangeResponse(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_RemoveServerRequest(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.RemoveServerRequest)) {
+    throw new Error('Expected argument of type RemoveServerRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_RemoveServerRequest(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.RemoveServerRequest.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_RequestVoteRequest(arg) {
@@ -71,6 +104,28 @@ var RaftNodeService = exports.RaftNodeService = {
     requestDeserialize: deserialize_AppendEntriesRequest,
     responseSerialize: serialize_AppendEntriesResponse,
     responseDeserialize: deserialize_AppendEntriesResponse,
+  },
+  addServer: {
+    path: '/RaftNode/AddServer',
+    requestStream: false,
+    responseStream: false,
+    requestType: adapters_network_grpc_protobuf_service_pb.AddServerRequest,
+    responseType: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse,
+    requestSerialize: serialize_AddServerRequest,
+    requestDeserialize: deserialize_AddServerRequest,
+    responseSerialize: serialize_MembershipChangeResponse,
+    responseDeserialize: deserialize_MembershipChangeResponse,
+  },
+  removeServer: {
+    path: '/RaftNode/RemoveServer',
+    requestStream: false,
+    responseStream: false,
+    requestType: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest,
+    responseType: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse,
+    requestSerialize: serialize_RemoveServerRequest,
+    requestDeserialize: deserialize_RemoveServerRequest,
+    responseSerialize: serialize_MembershipChangeResponse,
+    responseDeserialize: deserialize_MembershipChangeResponse,
   },
 };
 

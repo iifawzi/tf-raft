@@ -118,6 +118,69 @@ export namespace AppendEntriesResponse {
     }
 }
 
+export class AddServerRequest extends jspb.Message { 
+    getNewServer(): string;
+    setNewServer(value: string): AddServerRequest;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): AddServerRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: AddServerRequest): AddServerRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: AddServerRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): AddServerRequest;
+    static deserializeBinaryFromReader(message: AddServerRequest, reader: jspb.BinaryReader): AddServerRequest;
+}
+
+export namespace AddServerRequest {
+    export type AsObject = {
+        newServer: string,
+    }
+}
+
+export class RemoveServerRequest extends jspb.Message { 
+    getOldServer(): string;
+    setOldServer(value: string): RemoveServerRequest;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RemoveServerRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveServerRequest): RemoveServerRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RemoveServerRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveServerRequest;
+    static deserializeBinaryFromReader(message: RemoveServerRequest, reader: jspb.BinaryReader): RemoveServerRequest;
+}
+
+export namespace RemoveServerRequest {
+    export type AsObject = {
+        oldServer: string,
+    }
+}
+
+export class MembershipChangeResponse extends jspb.Message { 
+    getStatus(): MEMBERSHIP_CHANGES_RESPONSES;
+    setStatus(value: MEMBERSHIP_CHANGES_RESPONSES): MembershipChangeResponse;
+    getLeaderHint(): string;
+    setLeaderHint(value: string): MembershipChangeResponse;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): MembershipChangeResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: MembershipChangeResponse): MembershipChangeResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: MembershipChangeResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): MembershipChangeResponse;
+    static deserializeBinaryFromReader(message: MembershipChangeResponse, reader: jspb.BinaryReader): MembershipChangeResponse;
+}
+
+export namespace MembershipChangeResponse {
+    export type AsObject = {
+        status: MEMBERSHIP_CHANGES_RESPONSES,
+        leaderHint: string,
+    }
+}
+
 export class LogEntry extends jspb.Message { 
     getTerm(): number;
     setTerm(value: number): LogEntry;
@@ -139,4 +202,9 @@ export namespace LogEntry {
         term: number,
         command: string,
     }
+}
+
+export enum MEMBERSHIP_CHANGES_RESPONSES {
+    OK = 0,
+    NOT_LEADER = 1,
 }

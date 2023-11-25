@@ -52,12 +52,12 @@ describe("Membership & Nodes Configurations", () => {
         network.addServer("NODE2", server2);
         const state2 = new LocalStateManager("NODE2", "testDB/memb2");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE2" });
+        server1.AddServer({ newServer: "NODE2" });
         await sleep(300);
-        const addingResponse = await node2.addServerHandler({ newServer: "NODE2" });
+        const addingResponse = await server2.AddServer({ newServer: "NODE2" });
         expect(addingResponse.status).toEqual(MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER)
         expect(addingResponse.leaderHint).toEqual(node1.nodeId)
-        const removingResponse = await node2.removeServerHandler({ oldServer: "NODE2" });
+        const removingResponse = await server2.RemoveServer({ oldServer: "NODE2" });
         expect(removingResponse.status).toEqual(MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER)
         expect(removingResponse.leaderHint).toEqual(node1.nodeId)
 
@@ -87,13 +87,13 @@ describe("Membership & Nodes Configurations", () => {
         network.addServer("NODE2", server2);
         const state2 = new LocalStateManager("NODE2", "testDB/memb3");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE2" });
+        server1.AddServer({ newServer: "NODE2" });
 
         const server3 = new MemoryServer();
         network.addServer("NODE3", server3);
         const state3 = new LocalStateManager("NODE3", "testDB/memb3");
         const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE3" });
+        server1.AddServer({ newServer: "NODE3" });
 
         await sleep(300);
 
@@ -140,20 +140,20 @@ describe("Membership & Nodes Configurations", () => {
         network.addServer("NODE2", server2);
         const state2 = new LocalStateManager("NODE2", "testDB/memb4");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE2" });
+        server1.AddServer({ newServer: "NODE2" });
 
         const server3 = new MemoryServer();
         network.addServer("NODE3", server3);
         const state3 = new LocalStateManager("NODE3", "testDB/memb4");
         const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE3" });
+        server1.AddServer({ newServer: "NODE3" });
         
         await sleep(300);
-        node1.addServerHandler({ newServer: "NODE3" });
+        server1.AddServer({ newServer: "NODE3" });
         await sleep(300);
-        node1.removeServerHandler({ oldServer: "NODE3" });
+        server1.RemoveServer({ oldServer: "NODE3" });
         await sleep(300);
-        node1.addServerHandler({ newServer: "NODE3" });
+        server1.AddServer({ newServer: "NODE3" });
         await sleep(300);
 
         node1.stopListeners();
@@ -183,19 +183,19 @@ describe("Membership & Nodes Configurations", () => {
         network.addServer("NODE2", server2);
         const state2 = new LocalStateManager("NODE2", "testDB/memb5");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE2" });
+        server1.AddServer({ newServer: "NODE2" });
 
         const server3 = new MemoryServer();
         network.addServer("NODE3", server3);
         const state3 = new LocalStateManager("NODE3", "testDB/memb5");
         const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-        node1.addServerHandler({ newServer: "NODE3" });
+        server1.AddServer({ newServer: "NODE3" });
         
         await sleep(300);
         
         // turning off the actual node is the responsibility of the admin. ( correct me if i'm wrong.) 
         node3.stopListeners();
-        node1.removeServerHandler({ oldServer: "NODE3" });
+        server1.RemoveServer({ oldServer: "NODE3" });
         
         await sleep(300);
         node1.addCommand("TEST_COMMAND");

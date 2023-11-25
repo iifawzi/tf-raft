@@ -28,14 +28,14 @@ describe("Candidate", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testdb/cand1");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testdb/cand1");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(300);
 
@@ -64,7 +64,7 @@ describe("Candidate", () => {
         "MEMORY",
         true
       );
-      await sleep(300);
+      await sleep(1000);
       expect(node1.nodeState).toEqual(STATES.LEADER);
 
       // 2
@@ -72,16 +72,16 @@ describe("Candidate", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testdb/cand2");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testdb/cand2");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
-      await sleep(500);
+      await sleep(1000);
       const leaderLastLog = await node1.nodeStore.getLastLogEntry();
       const node2LastLog = await node1.nodeStore.getLastLogEntry();
       const node3LastLog = await node1.nodeStore.getLastLogEntry();
@@ -93,7 +93,7 @@ describe("Candidate", () => {
 
       node1.stopListeners();
 
-      await sleep(500);
+      await sleep(1000);
 
       const states = [node1.nodeState, node2.nodeState, node3.nodeState];
 
@@ -142,7 +142,7 @@ describe("Candidate", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testdb/cand3");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       await sleep(1000);
       const leaderLastLog = await node1.nodeStore.getLastLogEntry();
@@ -193,14 +193,14 @@ describe("Candidate", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testdb/cand4");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testdb/cand4");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(1000);
 
@@ -254,7 +254,7 @@ describe("Candidate", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testdb/cand5");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
       await sleep(1000);
 
       node1.stopListeners();

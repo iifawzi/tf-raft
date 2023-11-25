@@ -1,5 +1,5 @@
 import { RaftNode } from "@/core";
-import { AppendEntryRequest, AppendEntryResponse, RequestVoteRequest, RequestVoteResponse } from "@/dtos";
+import { AddServerRequest, AppendEntryRequest, AppendEntryResponse, MembershipChangeResponse, RemoveServerRequest, RequestVoteRequest, RequestVoteResponse } from "@/dtos";
 import { Server } from "@/interfaces";
 
 export class MemoryServer implements Server {
@@ -16,6 +16,16 @@ export class MemoryServer implements Server {
   
   public async AppendEntries(request: AppendEntryRequest): Promise<AppendEntryResponse> {
     const response = await this.node.appendEntryHandler(request);
+    return response;
+  }
+
+  public async AddServer(request: AddServerRequest): Promise<MembershipChangeResponse> {
+    const response = await this.node.addServerHandler(request);
+    return response;
+  }
+  
+  public async RemoveServer(request: RemoveServerRequest): Promise< MembershipChangeResponse> {
+    const response = await this.node.removeServerHandler(request);
     return response;
   }
 }

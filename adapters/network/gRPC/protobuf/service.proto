@@ -3,6 +3,8 @@ syntax = "proto3";
 service RaftNode {
       rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
       rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
+      rpc AddServer(AddServerRequest) returns (MembershipChangeResponse);
+      rpc RemoveServer(RemoveServerRequest) returns (MembershipChangeResponse);
 }
 
 message RequestVoteRequest {
@@ -31,7 +33,25 @@ message AppendEntriesResponse {
     bool success = 2;
 }
 
+message AddServerRequest {
+    string new_server = 1;
+}
+
+message RemoveServerRequest {
+    string old_server = 1;
+}
+
+message MembershipChangeResponse {
+    MEMBERSHIP_CHANGES_RESPONSES status = 1;
+    string leader_hint = 2;
+}
+
 message LogEntry {
     int32 term = 1;
     string command = 2;
-  }
+}
+
+enum MEMBERSHIP_CHANGES_RESPONSES{
+OK = 0;
+NOT_LEADER = 1;
+}

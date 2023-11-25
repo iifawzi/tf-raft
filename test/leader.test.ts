@@ -1,6 +1,5 @@
 import {
   MemoryNetwork,
-  MemoryPeer,
   MemoryServer,
 } from "@/adapters/network/memory";
 import { LocalStateManager } from "@/adapters/state";
@@ -32,14 +31,14 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testDB/led1");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testDB/led1");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(1000);
 
@@ -80,14 +79,14 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testDB/led2");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testDB/led2");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(300);
 
@@ -132,14 +131,14 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testDB/led3");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testDB/led3");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(800);
 
@@ -185,14 +184,14 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testDB/led4");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testDB/led4");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(500);
 
@@ -238,14 +237,14 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testDB/led5");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testDB/led5");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(1500);
       const leaderCommitIndex = node1.nodeStore.getCommitIndex();
@@ -282,14 +281,14 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testDB/led6");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
       const state3 = new LocalStateManager("NODE3", "testDB/led6");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE3" });
+      server1.AddServer({ newServer: "NODE3" });
 
       await sleep(1000);
 
@@ -334,18 +333,17 @@ describe("Leaders", () => {
       network.addServer("NODE2", server2);
       const state2 = new LocalStateManager("NODE2", "testdb/led7");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      node1.addServerHandler({ newServer: "NODE2" });
+      server1.AddServer({ newServer: "NODE2" });
 
       await sleep(500);
 
       node1.stopListeners();
       node2.stopListeners();
       
-      await node2.nodeStore.setCurrentTerm(await node1.nodeStore.getCurrentTerm() + 1)
+      await node2.nodeStore.setCurrentTerm(await node1.nodeStore.getCurrentTerm() + 10)
       
       node1.sendHeartbeats();
-     
-      await sleep(500);
+      await sleep(1000);
       expect(node1.nodeState).toEqual(STATES.FOLLOWER);
       node1.stopListeners();
       node2.stopListeners();
