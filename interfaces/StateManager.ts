@@ -22,6 +22,9 @@ export interface StateManager {
   getCommitIndex(): number;
   setCommitIndex(index: number): void;
 
+  getLeaderId(): string | null;
+  setLeaderId(leaderId: string): void;
+
   getLastApplied(): number;
   setLastApplied(index: number): void;
 

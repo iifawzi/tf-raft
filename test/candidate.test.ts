@@ -2,17 +2,19 @@ import { MemoryNetwork, MemoryServer } from "@/adapters/network/memory";
 import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 import { sleep } from "@/utils";
+import { removeDir } from "./helpers/deleteDir.helper";
 
 describe("Candidate", () => {
   console.log = jest.fn();
 
   describe("Only one leader is elected", () => {
     it("should have only one leader per term", async () => {
+      await removeDir('testdb/cand1')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB");
+      const state1 = new LocalStateManager("NODE1", "testdb/cand1");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -24,14 +26,14 @@ describe("Candidate", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB");
+      const state2 = new LocalStateManager("NODE2", "testdb/cand1");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       node1.addServerHandler({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testDB");
+      const state3 = new LocalStateManager("NODE3", "testdb/cand1");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
@@ -49,11 +51,12 @@ describe("Candidate", () => {
 
   describe("When multiple candidates", () => {
     it("Only one node become leader eventually", async () => {
+      await removeDir('testdb/cand2')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB");
+      const state1 = new LocalStateManager("NODE1", "testdb/cand2");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -67,14 +70,14 @@ describe("Candidate", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB");
+      const state2 = new LocalStateManager("NODE2", "testdb/cand2");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       node1.addServerHandler({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testDB");
+      const state3 = new LocalStateManager("NODE3", "testdb/cand2");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
@@ -118,11 +121,12 @@ describe("Candidate", () => {
 
   describe("Step down if discovered peer with higher term", () => {
     it("should step down if discovered peer with higher term in request vote handler", async () => {
+      await removeDir('testdb/cand3');
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB");
+      const state1 = new LocalStateManager("NODE1", "testdb/cand3");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -130,17 +134,17 @@ describe("Candidate", () => {
         "MEMORY",
         true
       );
-      await sleep(300);
+      await sleep(1000);
       expect(node1.nodeState).toEqual(STATES.LEADER);
 
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB");
+      const state2 = new LocalStateManager("NODE2", "testdb/cand3");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       node1.addServerHandler({ newServer: "NODE2" });
 
-      await sleep(500);
+      await sleep(1000);
       const leaderLastLog = await node1.nodeStore.getLastLogEntry();
       const node2LastLog = await node2.nodeStore.getLastLogEntry();
 
@@ -168,11 +172,12 @@ describe("Candidate", () => {
     });
 
     it("should step down if discovered peer with higher term in request vote response", async () => {
+      await removeDir('testdb/cand4');
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB");
+      const state1 = new LocalStateManager("NODE1", "testdb/cand4");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -186,14 +191,14 @@ describe("Candidate", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB");
+      const state2 = new LocalStateManager("NODE2", "testdb/cand4");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       node1.addServerHandler({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testDB");
+      const state3 = new LocalStateManager("NODE3", "testdb/cand4");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       node1.addServerHandler({ newServer: "NODE3" });
 
@@ -228,11 +233,12 @@ describe("Candidate", () => {
 
   describe("Candidate with incomplete log", () => {
     it("Shouldn't be elected leader", async () => {
+      await removeDir('testdb/cand5');
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB");
+      const state1 = new LocalStateManager("NODE1", "testdb/cand5");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -246,7 +252,7 @@ describe("Candidate", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB");
+      const state2 = new LocalStateManager("NODE2", "testdb/cand5");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       node1.addServerHandler({ newServer: "NODE2" });
       await sleep(1000);

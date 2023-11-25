@@ -13,6 +13,7 @@ const persistentKeys = {
 export class LocalStateManager implements StateManager {
   private db!: JsonDB;
   private volatile: {
+    leaderId: string | null;
     commitIndex: number;
     lastApplied: number;
     nextIndex: Record<string, number>;
@@ -22,6 +23,7 @@ export class LocalStateManager implements StateManager {
     lastApplied: -1,
     nextIndex: {},
     matchIndex: {},
+    leaderId: null,
   };
   constructor(private nodeId: string, private path = "db") {
     this.nodeId = nodeId;
@@ -113,6 +115,13 @@ export class LocalStateManager implements StateManager {
   }
 
   ///// Volatile /////
+  public getLeaderId(): string | null {
+    return this.volatile.leaderId;
+  }
+  public setLeaderId(leaderId: string): void {
+    this.volatile.leaderId = leaderId;
+  }
+
   public getCommitIndex(): number {
     return this.volatile.commitIndex;
   }

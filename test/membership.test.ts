@@ -3,16 +3,18 @@ import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 import { MEMBERSHIP_CHANGES_RESPONSES } from "@/dtos";
 import { sleep } from "@/utils";
+import { removeDir } from "./helpers/deleteDir.helper";
 
 describe("Membership & Nodes Configurations", () => {
   console.log = jest.fn();
 
     describe("Single node becomes leader", () => {
       it("single node should become leader and a configuration log should be created", async () => {
+      await removeDir('testdb/memb1')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
-        const state1 = new LocalStateManager("NODE1", "testDB");
+        const state1 = new LocalStateManager("NODE1", "testDB/memb1");
         const node1 = await RaftNode.create(
           "NODE1",
           server1,
@@ -31,10 +33,11 @@ describe("Membership & Nodes Configurations", () => {
 
     describe("Non-Leaders should reject removing or adding nodes", () => {
       it("Node should reject adding/removing node if it's not leader", async () => {
+      await removeDir('testdb/memb2')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
-        const state1 = new LocalStateManager("NODE1", "testDB");
+        const state1 = new LocalStateManager("NODE1", "testDB/memb2");
         const node1 = await RaftNode.create(
           "NODE1",
           server1,
@@ -47,23 +50,29 @@ describe("Membership & Nodes Configurations", () => {
 
         const server2 = new MemoryServer();
         network.addServer("NODE2", server2);
-        const state2 = new LocalStateManager("NODE2", "testDB");
+        const state2 = new LocalStateManager("NODE2", "testDB/memb2");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
         node1.addServerHandler({ newServer: "NODE2" });
         await sleep(300);
         const addingResponse = await node2.addServerHandler({ newServer: "NODE2" });
         expect(addingResponse.status).toEqual(MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER)
+        expect(addingResponse.leaderHint).toEqual(node1.nodeId)
         const removingResponse = await node2.removeServerHandler({ oldServer: "NODE2" });
         expect(removingResponse.status).toEqual(MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER)
+        expect(removingResponse.leaderHint).toEqual(node1.nodeId)
+
+        node1.stopListeners();
+        node2.stopListeners();
       });
     });
 
     describe("AddServer should add the node to the cluster and replicate the configuration log to all nodes", () => {
       it("Nodes should be added and the logs should be replicated", async () => {
+        await removeDir('testdb/memb3')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
-        const state1 = new LocalStateManager("NODE1", "testDB");
+        const state1 = new LocalStateManager("NODE1", "testDB/memb3");
         const node1 = await RaftNode.create(
           "NODE1",
           server1,
@@ -76,13 +85,13 @@ describe("Membership & Nodes Configurations", () => {
 
         const server2 = new MemoryServer();
         network.addServer("NODE2", server2);
-        const state2 = new LocalStateManager("NODE2", "testDB");
+        const state2 = new LocalStateManager("NODE2", "testDB/memb3");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
         node1.addServerHandler({ newServer: "NODE2" });
 
         const server3 = new MemoryServer();
         network.addServer("NODE3", server3);
-        const state3 = new LocalStateManager("NODE3", "testDB");
+        const state3 = new LocalStateManager("NODE3", "testDB/memb3");
         const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
         node1.addServerHandler({ newServer: "NODE3" });
 
@@ -112,10 +121,11 @@ describe("Membership & Nodes Configurations", () => {
       });
 
       it("Peers should not be replicated twice", async () => {
+        await removeDir('testdb/memb4')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
-        const state1 = new LocalStateManager("NODE1", "testDB");
+        const state1 = new LocalStateManager("NODE1", "testDB/memb4");
         const node1 = await RaftNode.create(
           "NODE1",
           server1,
@@ -128,13 +138,13 @@ describe("Membership & Nodes Configurations", () => {
 
         const server2 = new MemoryServer();
         network.addServer("NODE2", server2);
-        const state2 = new LocalStateManager("NODE2", "testDB");
+        const state2 = new LocalStateManager("NODE2", "testDB/memb4");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
         node1.addServerHandler({ newServer: "NODE2" });
 
         const server3 = new MemoryServer();
         network.addServer("NODE3", server3);
-        const state3 = new LocalStateManager("NODE3", "testDB");
+        const state3 = new LocalStateManager("NODE3", "testDB/memb4");
         const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
         node1.addServerHandler({ newServer: "NODE3" });
         
@@ -154,10 +164,11 @@ describe("Membership & Nodes Configurations", () => {
 
     describe("RemoveServer should add the node to the cluster and replicate the configuration log to all nodes", () => {
       it("Nodes should be removed and the logs should no longer be replicated to it", async () => {
+        await removeDir('testdb/memb5')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
-        const state1 = new LocalStateManager("NODE1", "testDB");
+        const state1 = new LocalStateManager("NODE1", "testDB/memb5");
         const node1 = await RaftNode.create(
           "NODE1",
           server1,
@@ -170,13 +181,13 @@ describe("Membership & Nodes Configurations", () => {
 
         const server2 = new MemoryServer();
         network.addServer("NODE2", server2);
-        const state2 = new LocalStateManager("NODE2", "testDB");
+        const state2 = new LocalStateManager("NODE2", "testDB/memb5");
         const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
         node1.addServerHandler({ newServer: "NODE2" });
 
         const server3 = new MemoryServer();
         network.addServer("NODE3", server3);
-        const state3 = new LocalStateManager("NODE3", "testDB");
+        const state3 = new LocalStateManager("NODE3", "testDB/memb5");
         const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
         node1.addServerHandler({ newServer: "NODE3" });
         
@@ -201,82 +212,4 @@ describe("Membership & Nodes Configurations", () => {
         node3.stopListeners();
       });
     });
-
-  //   it("Shouldn't be elected leader", (done) => {
-  //     let originalLeader: string;
-  //     let candidateId: string;
-  //     setTimeout(async () => {
-  //       for (let i = 0; i < nodes.length; i++) {
-  //         const node = nodes[i];
-  //         if (node.nodeState === STATES.LEADER) {
-  //           expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-  //           originalLeader = node.nodeId;
-  //         }
-  //       }
-  //     }, 500);
-
-  //     setTimeout(async () => {
-  //       for (let i = 0; i < nodes.length; i++) {
-  //         const node = nodes[i];
-  //         if (node.nodeId !== originalLeader) {
-  //           candidateId = node.nodeId;
-  //           await node.nodeStore.deleteFromIndexMovingForward(0);
-  //           await node.becomeCandidate();
-  //           break;
-  //         }
-  //       }
-  //     }, 1000);
-
-  //     setTimeout(async () => {
-  //       for (let i = 0; i < nodes.length; i++) {
-  //         const node = nodes[i];
-  //         if (node.nodeState === STATES.LEADER) {
-  //           expect(node.nodeId !== candidateId).toEqual(true);
-  //         }
-  //       }
-
-  //       done();
-  //     }, 1120);
-  //   });
-  //   it("should step down if discovered peer with higher term in request vote response", (done) => {
-  //     let originalLeader: string;
-  //     setTimeout(async () => {
-  //       for (let i = 0; i < nodes.length; i++) {
-  //         const node = nodes[i];
-  //         if (node.nodeState === STATES.LEADER) {
-  //           expect(await node.nodeStore.getCurrentTerm()).toEqual(0);
-  //           originalLeader = node.nodeId;
-  //         }
-  //       }
-  //     }, 500);
-
-  //     setTimeout(async () => {
-  //       for (let i = 0; i < nodes.length; i++) {
-  //         const node = nodes[i];
-  //         if (node.nodeId !== originalLeader) {
-  //           for (let j = 0; j < nodes.length; j++) {
-  //             if (nodes[j].nodeId == originalLeader) {
-  //               jest
-  //                 .spyOn(nodes[j], "requestVoteHandler")
-  //                 .mockResolvedValue({ term: 10, voteGranted: false });
-  //             }
-  //           }
-  //           await node.becomeCandidate();
-  //           break;
-  //         }
-  //       }
-  //     }, 810);
-
-  //     setTimeout(async () => {
-  //       for (let i = 0; i < nodes.length; i++) {
-  //         const node = nodes[i];
-  //         expect(await node.nodeStore.getCurrentTerm()).toBeGreaterThanOrEqual(
-  //           10
-  //         );
-  //       }
-
-  //       done();
-  //     }, 1500);
-  //   });
-  // });
 });

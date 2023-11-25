@@ -204,8 +204,8 @@ export class RaftNode {
       const nextIndex = this.stateManager.getNextIndex(peer.peerId);
       const prevLogIndex = nextIndex - 1;
       if (prevLogIndex >= 0) {
-        prevLogTerm = (await this.stateManager.getLogAtIndex(prevLogIndex))
-          .term;
+        const log = await this.stateManager.getLogAtIndex(prevLogIndex);
+        prevLogTerm = log.term;
       }
 
       let entriesList: LogEntry[] = [];
@@ -321,7 +321,7 @@ export class RaftNode {
       leaderHint: "",
     };
     if (this.nodeState !== STATES.LEADER) {
-      // TODO:: hint the leaderId/port
+      response.leaderHint = this.stateManager.getLeaderId() ?? '',
       response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
       return response;
     }
@@ -345,7 +345,7 @@ export class RaftNode {
       leaderHint: "",
     };
     if (this.nodeState !== STATES.LEADER) {
-      // TODO:: hint the leaderId/port
+      response.leaderHint = this.stateManager.getLeaderId() ?? '';
       response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
       return response;
     }
@@ -493,6 +493,11 @@ export class RaftNode {
       return response;
     }
 
+    // updating leader to hint it to clients whenever needed.
+    if (this.stateManager.getLeaderId() !== request.leaderId) {
+      this.stateManager.setLeaderId(request.leaderId);
+    }
+
     if (prevLogEntry.term !== request.prevLogTerm) {
       await this.stateManager.deleteFromIndexMovingForward(
         request.prevLogIndex
@@ -536,12 +541,13 @@ export class RaftNode {
   /**********************
    Client Interaction
    **********************/
+  // TODO:: IMPROVE WHEN WORKING ON CLIENT AND KV Store.
+  // type the commands, the responses, and return leaderId. 
   public async addCommand(command: any) {
     if (this.nodeState == STATES.LEADER) {
       const currentTerm = await this.stateManager.getCurrentTerm();
       await this.stateManager.appendEntries([{ term: currentTerm, command }]);
     } else {
-      // TODO:: REPLY TO CLIENT WITH THE LEADER ID;
     }
   }
   /**********************

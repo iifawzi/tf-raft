@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --collect-coverage",
+    "test": "jest  --collect-coverage",
     "build-grpc": "./scripts/build.sh",
     "start": "ts-node index.ts"
   },
