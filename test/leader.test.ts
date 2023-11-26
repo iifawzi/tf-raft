@@ -6,6 +6,7 @@ import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 import { sleep } from "@/utils";
 import { removeDir } from "./helpers/deleteDir.helper";
+import { CommandType } from "@/interfaces";
 
 describe("Leaders", () => {
   console.log = jest.fn();
@@ -91,7 +92,7 @@ describe("Leaders", () => {
       await sleep(300);
 
       const command = "COMMAND-TEST";
-      await node1.addCommand(command);
+      await server1.AddCommand({ type: CommandType.TESTING, data: command});
       const leaderLastLog = await node1.nodeStore.getLastLogEntry();
 
       await sleep(300);

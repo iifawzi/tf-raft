@@ -4,6 +4,7 @@ import { RaftNode, STATES } from "@/core";
 import { MEMBERSHIP_CHANGES_RESPONSES } from "@/dtos";
 import { sleep } from "@/utils";
 import { removeDir } from "./helpers/deleteDir.helper";
+import { CommandType } from "@/interfaces";
 
 describe("Membership & Nodes Configurations", () => {
   console.log = jest.fn();
@@ -97,8 +98,7 @@ describe("Membership & Nodes Configurations", () => {
 
         await sleep(300);
 
-        node1.addCommand("TEST_COMMAND");
-
+        await server1.AddCommand({ type: CommandType.TESTING, data: 'TEST_COMMAND'});
         await sleep(300);
 
         const leaderTerm = await node1.nodeStore.getCurrentTerm();
@@ -198,7 +198,7 @@ describe("Membership & Nodes Configurations", () => {
         server1.RemoveServer({ oldServer: "NODE3" });
         
         await sleep(300);
-        node1.addCommand("TEST_COMMAND");
+        await server1.AddCommand({ type: CommandType.TESTING, data: 'TEST_COMMAND'});
         await sleep(300);
 
         const leaderLastLog = await node1.nodeStore.getLastLogEntry();

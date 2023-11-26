@@ -1,4 +1,10 @@
-import { LogEntry, PeerConnection, Server, StateManager } from "@/interfaces";
+import {
+  Command,
+  LogEntry,
+  PeerConnection,
+  Server,
+  StateManager,
+} from "@/interfaces";
 import { getRandomTimeout } from "@/utils";
 import { STATES } from "./constants";
 import {
@@ -321,7 +327,7 @@ export class RaftNode {
       leaderHint: "",
     };
     if (this.nodeState !== STATES.LEADER) {
-      response.leaderHint = this.stateManager.getLeaderId() ?? '',
+      response.leaderHint = this.stateManager.getLeaderId() ?? "";
       response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
       return response;
     }
@@ -345,7 +351,7 @@ export class RaftNode {
       leaderHint: "",
     };
     if (this.nodeState !== STATES.LEADER) {
-      response.leaderHint = this.stateManager.getLeaderId() ?? '';
+      response.leaderHint = this.stateManager.getLeaderId() ?? "";
       response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
       return response;
     }
@@ -389,7 +395,9 @@ export class RaftNode {
   }
 
   public applyMembershipAdd(serverIdentifier: string) {
-    console.log(`${this.nodeId} is applying peer addition - adding: ${serverIdentifier}`)
+    console.log(
+      `${this.nodeId} is applying peer addition - adding: ${serverIdentifier}`
+    );
     let peer!: PeerConnection;
     const peerIndex = this.peers.findIndex(
       (peer) => peer.peerId == serverIdentifier
@@ -541,14 +549,15 @@ export class RaftNode {
   /**********************
    Client Interaction
    **********************/
-  // TODO:: IMPROVE WHEN WORKING ON CLIENT AND KV Store.
-  // type the commands, the responses, and return leaderId. 
-  public async addCommand(command: any) {
+  public async AddCommand(
+    command: Command<any>
+  ): Promise<{ status: boolean; data: null | string }> {
     if (this.nodeState == STATES.LEADER) {
       const currentTerm = await this.stateManager.getCurrentTerm();
       await this.stateManager.appendEntries([{ term: currentTerm, command }]);
-    } else {
+      return { status: true, data: null };
     }
+    return { status: false, data: this.stateManager.getLeaderId() ?? null };
   }
   /**********************
    Fixed membership configurator & utils
@@ -584,9 +593,7 @@ export class RaftNode {
       logEntry.command?.data !== this.nodeId
     ) {
       this.applyMembershipAdd(logEntry.command.data);
-    } else if (
-      logEntry.command?.type == "MEMBERSHIP_REMOVE"
-    ) {
+    } else if (logEntry.command?.type == "MEMBERSHIP_REMOVE") {
       this.applyMembershipRemove(logEntry.command.data);
     }
   }

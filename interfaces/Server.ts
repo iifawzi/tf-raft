@@ -6,4 +6,5 @@ export interface Server {
   AppendEntries(...args: any[]): any;
   AddServer(...args: any[]): any;
   RemoveServer(...args: any[]): any;
+  AddCommand(...args: any[]): any;
 }
