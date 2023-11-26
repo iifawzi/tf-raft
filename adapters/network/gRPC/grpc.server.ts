@@ -76,4 +76,8 @@ export class gRPCServer implements Server {
     callback(null, grpcResponse);
   }
 
+  AddCommand(...args: any[]) {
+    throw new Error("Method not implemented.");
+  }
+
 }

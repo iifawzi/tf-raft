@@ -46,12 +46,24 @@ message MembershipChangeResponse {
     string leader_hint = 2;
 }
 
+message AddCommand {
+    CommandType type = 1;
+    string data = 2;
+}
+
 message LogEntry {
-    int32 term = 1;
-    string command = 2;
+    string type = 1;
+    string data = 2;
 }
 
 enum MEMBERSHIP_CHANGES_RESPONSES{
-OK = 0;
-NOT_LEADER = 1;
+    OK = 0;
+    NOT_LEADER = 1;
+}
+
+enum CommandType {
+    TESTING = 0; // ONLY TO BE USED IN TESTING.
+    NOOP = 1;
+    MEMBERSHIP_ADD = 2;
+    MEMBERSHIP_REMOVE = 3;
 }

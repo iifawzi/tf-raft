@@ -1,8 +1,8 @@
 export enum CommandType {
-  TESTING = "TESTING", // ONLY TO BE USED IN TESTING.
-  NOOP = "NOOP",
-  MEMBERSHIP_ADD = "MEMBERSHIP_ADD",
-  MEMBERSHIP_REMOVE = "MEMBERSHIP_REMOVE",
+  TESTING = 1, // ONLY TO BE USED IN TESTING.
+  NOOP = 2,
+  MEMBERSHIP_ADD = 3,
+  MEMBERSHIP_REMOVE = 4,
 }
 export interface Command<T> {
   type: CommandType;

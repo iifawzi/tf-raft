@@ -1,5 +1,6 @@
 import {
   Command,
+  CommandType,
   LogEntry,
   PeerConnection,
   Server,
@@ -589,11 +590,11 @@ export class RaftNode {
   // TODO:: Improve
   private logApplier(logEntry: LogEntry) {
     if (
-      logEntry.command?.type == "MEMBERSHIP_ADD" &&
+      logEntry.command?.type == CommandType.MEMBERSHIP_ADD &&
       logEntry.command?.data !== this.nodeId
     ) {
       this.applyMembershipAdd(logEntry.command.data);
-    } else if (logEntry.command?.type == "MEMBERSHIP_REMOVE") {
+    } else if (logEntry.command?.type == CommandType.MEMBERSHIP_REMOVE) {
       this.applyMembershipRemove(logEntry.command.data);
     }
   }
