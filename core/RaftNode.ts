@@ -333,12 +333,12 @@ export class RaftNode {
   public async addServerHandler(
     request: AddServerRequest
   ): Promise<MembershipChangeResponse> {
+    const leader = this.stateManager.getLeaderId() ?? "";
     const response = {
       status: MEMBERSHIP_CHANGES_RESPONSES.OK,
-      leaderHint: "",
+      leaderHint: leader,
     };
     if (this.nodeState !== STATES.LEADER) {
-      response.leaderHint = this.stateManager.getLeaderId() ?? "";
       response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
       return response;
     }
@@ -357,12 +357,13 @@ export class RaftNode {
   public async removeServerHandler(
     request: RemoveServerRequest
   ): Promise<MembershipChangeResponse> {
+    const leader = this.stateManager.getLeaderId() ?? "";
     const response = {
       status: MEMBERSHIP_CHANGES_RESPONSES.OK,
-      leaderHint: "",
+      leaderHint: leader,
     };
     if (this.nodeState !== STATES.LEADER) {
-      response.leaderHint = this.stateManager.getLeaderId() ?? "";
+      response.leaderHint = leader;
       response.status = MEMBERSHIP_CHANGES_RESPONSES.NOT_LEADER;
       return response;
     }
