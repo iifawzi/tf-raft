@@ -15,7 +15,7 @@ export class MemoryStore implements Store {
     this.store.delete(key);
   }
 
-  GETALL(key: string): Map<string, string> {
+  GETALL(): Map<string, string> {
     return this.store;
   }
 }

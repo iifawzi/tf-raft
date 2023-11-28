@@ -20,6 +20,8 @@ import {
 } from "@/dtos";
 import { MemoryPeer } from "@/adapters/network/memory";
 import { membershipAddCMD, membershipRemoveCMD, noOpCMD } from "./commands";
+import { Store } from "@/store/interfaces";
+import { MemoryStore } from "@/store/memory.store";
 export class RaftNode {
   private peers: PeerConnection[] = [];
   private state!: STATES;
@@ -33,7 +35,8 @@ export class RaftNode {
     private readonly server: Server,
     private readonly stateManager: StateManager,
     private readonly protocol: "RPC" | "MEMORY",
-    private readonly leader: boolean
+    private readonly leader: boolean,
+    private readonly store: Store
   ) {
     this.id = id;
     this.server = server;
@@ -61,7 +64,14 @@ export class RaftNode {
         },
       ]);
     }
-    return new RaftNode(id, server, stateManager, protocol, leader);
+    return new RaftNode(
+      id,
+      server,
+      stateManager,
+      protocol,
+      leader,
+      new MemoryStore()
+    );
   }
 
   /**********************
@@ -560,6 +570,9 @@ export class RaftNode {
     }
     return { status: false, data: this.stateManager.getLeaderId() ?? null };
   }
+  public async GetValue(key: string): Promise<string | null> {
+    return this.store.GET(key) || null;
+  }
   /**********************
    Fixed membership configurator & utils
    **********************/
@@ -589,13 +602,27 @@ export class RaftNode {
 
   // TODO:: Improve
   private logApplier(logEntry: LogEntry) {
-    if (
-      logEntry.command?.type == CommandType.MEMBERSHIP_ADD &&
-      logEntry.command?.data !== this.nodeId
-    ) {
-      this.applyMembershipAdd(logEntry.command.data);
-    } else if (logEntry.command?.type == CommandType.MEMBERSHIP_REMOVE) {
-      this.applyMembershipRemove(logEntry.command.data);
+    switch (logEntry.command.type) {
+      case CommandType.MEMBERSHIP_ADD:
+        console.error("MEMBERSHIP_ADD command applier");
+        if (logEntry.command.data !== this.nodeId) {
+          this.applyMembershipAdd(logEntry.command.data);
+        }
+        break;
+      case CommandType.MEMBERSHIP_REMOVE:
+        console.log("MEMBERSHIP_REMOVE command applier");
+        this.applyMembershipRemove(logEntry.command.data);
+        break;
+      case CommandType.STORE_SET:
+        console.log("STORE_SET command applier");
+        this.store.SET(logEntry.command.data.key, logEntry.command.data.value);
+        break;
+      case CommandType.STORE_DEL:
+        console.log("STORE_DEL command applier");
+        this.store.DEL(logEntry.command.data.key);
+        break;
+      default:
+        console.log("UNHANDLED COMMAND", logEntry.command);
     }
   }
 }
