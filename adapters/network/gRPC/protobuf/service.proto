@@ -5,6 +5,8 @@ service RaftNode {
       rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
       rpc AddServer(AddServerRequest) returns (MembershipChangeResponse);
       rpc RemoveServer(RemoveServerRequest) returns (MembershipChangeResponse);
+      rpc ClientRequest(ClientRequestRequest) returns (NoResponse);
+      rpc ClientQuery(ClientQueryRequest) returns (ClientQueryResponse);
 }
 
 message RequestVoteRequest {
@@ -46,14 +48,24 @@ message MembershipChangeResponse {
     string leader_hint = 2;
 }
 
-message AddCommand {
+message ClientRequestRequest {
     CommandType type = 1;
     string data = 2;
 }
 
+message ClientQueryRequest {
+    string key = 1;
+}
+
+message ClientQueryResponse {
+    bool status = 1;
+    string leader_hint = 2;
+    string response = 3;
+}
+
 message LogEntry {
-    string type = 1;
-    string data = 2;
+    int32 term = 1;
+    string command = 2;
 }
 
 enum MEMBERSHIP_CHANGES_RESPONSES{
@@ -62,8 +74,9 @@ enum MEMBERSHIP_CHANGES_RESPONSES{
 }
 
 enum CommandType {
-    TESTING = 0; // ONLY TO BE USED IN TESTING.
-    NOOP = 1;
-    MEMBERSHIP_ADD = 2;
-    MEMBERSHIP_REMOVE = 3;
-}
+    NOOP = 0;
+    STORE_SET = 1;
+    STORE_DEL = 2;
+  }
+
+message NoResponse { }

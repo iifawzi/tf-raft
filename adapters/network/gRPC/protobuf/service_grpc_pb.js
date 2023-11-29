@@ -37,6 +37,39 @@ function deserialize_AppendEntriesResponse(buffer_arg) {
   return adapters_network_grpc_protobuf_service_pb.AppendEntriesResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
+function serialize_ClientQueryRequest(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.ClientQueryRequest)) {
+    throw new Error('Expected argument of type ClientQueryRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_ClientQueryRequest(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.ClientQueryRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_ClientQueryResponse(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.ClientQueryResponse)) {
+    throw new Error('Expected argument of type ClientQueryResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_ClientQueryResponse(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.ClientQueryResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_ClientRequestRequest(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.ClientRequestRequest)) {
+    throw new Error('Expected argument of type ClientRequestRequest');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_ClientRequestRequest(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.ClientRequestRequest.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
 function serialize_MembershipChangeResponse(arg) {
   if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse)) {
     throw new Error('Expected argument of type MembershipChangeResponse');
@@ -46,6 +79,17 @@ function serialize_MembershipChangeResponse(arg) {
 
 function deserialize_MembershipChangeResponse(buffer_arg) {
   return adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse.deserializeBinary(new Uint8Array(buffer_arg));
+}
+
+function serialize_NoResponse(arg) {
+  if (!(arg instanceof adapters_network_grpc_protobuf_service_pb.NoResponse)) {
+    throw new Error('Expected argument of type NoResponse');
+  }
+  return Buffer.from(arg.serializeBinary());
+}
+
+function deserialize_NoResponse(buffer_arg) {
+  return adapters_network_grpc_protobuf_service_pb.NoResponse.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_RemoveServerRequest(arg) {
@@ -126,6 +170,28 @@ var RaftNodeService = exports.RaftNodeService = {
     requestDeserialize: deserialize_RemoveServerRequest,
     responseSerialize: serialize_MembershipChangeResponse,
     responseDeserialize: deserialize_MembershipChangeResponse,
+  },
+  clientRequest: {
+    path: '/RaftNode/ClientRequest',
+    requestStream: false,
+    responseStream: false,
+    requestType: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest,
+    responseType: adapters_network_grpc_protobuf_service_pb.NoResponse,
+    requestSerialize: serialize_ClientRequestRequest,
+    requestDeserialize: deserialize_ClientRequestRequest,
+    responseSerialize: serialize_NoResponse,
+    responseDeserialize: deserialize_NoResponse,
+  },
+  clientQuery: {
+    path: '/RaftNode/ClientQuery',
+    requestStream: false,
+    responseStream: false,
+    requestType: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest,
+    responseType: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse,
+    requestSerialize: serialize_ClientQueryRequest,
+    requestDeserialize: deserialize_ClientQueryRequest,
+    responseSerialize: serialize_ClientQueryResponse,
+    responseDeserialize: deserialize_ClientQueryResponse,
   },
 };
 

@@ -1,6 +1,6 @@
 export enum MEMBERSHIP_CHANGES_RESPONSES {
-    'OK' = 1,
-    'NOT_LEADER' = 2,
+    'OK' = 0,
+    'NOT_LEADER' = 1,
 }
 
 export interface AddServerRequest {

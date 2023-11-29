@@ -12,6 +12,8 @@ interface IRaftNodeService extends grpc.ServiceDefinition<grpc.UntypedServiceImp
     appendEntries: IRaftNodeService_IAppendEntries;
     addServer: IRaftNodeService_IAddServer;
     removeServer: IRaftNodeService_IRemoveServer;
+    clientRequest: IRaftNodeService_IClientRequest;
+    clientQuery: IRaftNodeService_IClientQuery;
 }
 
 interface IRaftNodeService_IRequestVote extends grpc.MethodDefinition<adapters_network_grpc_protobuf_service_pb.RequestVoteRequest, adapters_network_grpc_protobuf_service_pb.RequestVoteResponse> {
@@ -50,6 +52,24 @@ interface IRaftNodeService_IRemoveServer extends grpc.MethodDefinition<adapters_
     responseSerialize: grpc.serialize<adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse>;
     responseDeserialize: grpc.deserialize<adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse>;
 }
+interface IRaftNodeService_IClientRequest extends grpc.MethodDefinition<adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, adapters_network_grpc_protobuf_service_pb.NoResponse> {
+    path: "/RaftNode/ClientRequest";
+    requestStream: false;
+    responseStream: false;
+    requestSerialize: grpc.serialize<adapters_network_grpc_protobuf_service_pb.ClientRequestRequest>;
+    requestDeserialize: grpc.deserialize<adapters_network_grpc_protobuf_service_pb.ClientRequestRequest>;
+    responseSerialize: grpc.serialize<adapters_network_grpc_protobuf_service_pb.NoResponse>;
+    responseDeserialize: grpc.deserialize<adapters_network_grpc_protobuf_service_pb.NoResponse>;
+}
+interface IRaftNodeService_IClientQuery extends grpc.MethodDefinition<adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, adapters_network_grpc_protobuf_service_pb.ClientQueryResponse> {
+    path: "/RaftNode/ClientQuery";
+    requestStream: false;
+    responseStream: false;
+    requestSerialize: grpc.serialize<adapters_network_grpc_protobuf_service_pb.ClientQueryRequest>;
+    requestDeserialize: grpc.deserialize<adapters_network_grpc_protobuf_service_pb.ClientQueryRequest>;
+    responseSerialize: grpc.serialize<adapters_network_grpc_protobuf_service_pb.ClientQueryResponse>;
+    responseDeserialize: grpc.deserialize<adapters_network_grpc_protobuf_service_pb.ClientQueryResponse>;
+}
 
 export const RaftNodeService: IRaftNodeService;
 
@@ -58,6 +78,8 @@ export interface IRaftNodeServer extends grpc.UntypedServiceImplementation {
     appendEntries: grpc.handleUnaryCall<adapters_network_grpc_protobuf_service_pb.AppendEntriesRequest, adapters_network_grpc_protobuf_service_pb.AppendEntriesResponse>;
     addServer: grpc.handleUnaryCall<adapters_network_grpc_protobuf_service_pb.AddServerRequest, adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse>;
     removeServer: grpc.handleUnaryCall<adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse>;
+    clientRequest: grpc.handleUnaryCall<adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, adapters_network_grpc_protobuf_service_pb.NoResponse>;
+    clientQuery: grpc.handleUnaryCall<adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, adapters_network_grpc_protobuf_service_pb.ClientQueryResponse>;
 }
 
 export interface IRaftNodeClient {
@@ -73,6 +95,12 @@ export interface IRaftNodeClient {
     removeServer(request: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse) => void): grpc.ClientUnaryCall;
     removeServer(request: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse) => void): grpc.ClientUnaryCall;
     removeServer(request: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse) => void): grpc.ClientUnaryCall;
+    clientRequest(request: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.NoResponse) => void): grpc.ClientUnaryCall;
+    clientRequest(request: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.NoResponse) => void): grpc.ClientUnaryCall;
+    clientRequest(request: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.NoResponse) => void): grpc.ClientUnaryCall;
+    clientQuery(request: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse) => void): grpc.ClientUnaryCall;
+    clientQuery(request: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse) => void): grpc.ClientUnaryCall;
+    clientQuery(request: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class RaftNodeClient extends grpc.Client implements IRaftNodeClient {
@@ -89,4 +117,10 @@ export class RaftNodeClient extends grpc.Client implements IRaftNodeClient {
     public removeServer(request: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse) => void): grpc.ClientUnaryCall;
     public removeServer(request: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse) => void): grpc.ClientUnaryCall;
     public removeServer(request: adapters_network_grpc_protobuf_service_pb.RemoveServerRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.MembershipChangeResponse) => void): grpc.ClientUnaryCall;
+    public clientRequest(request: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.NoResponse) => void): grpc.ClientUnaryCall;
+    public clientRequest(request: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.NoResponse) => void): grpc.ClientUnaryCall;
+    public clientRequest(request: adapters_network_grpc_protobuf_service_pb.ClientRequestRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.NoResponse) => void): grpc.ClientUnaryCall;
+    public clientQuery(request: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse) => void): grpc.ClientUnaryCall;
+    public clientQuery(request: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse) => void): grpc.ClientUnaryCall;
+    public clientQuery(request: adapters_network_grpc_protobuf_service_pb.ClientQueryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: adapters_network_grpc_protobuf_service_pb.ClientQueryResponse) => void): grpc.ClientUnaryCall;
 }

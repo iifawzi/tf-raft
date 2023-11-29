@@ -44,40 +44,63 @@ export class gRPCServer implements Server {
    RPCs
    *************************/
 
-   async RequestVote(call: grpc.ServerUnaryCall<messages.RequestVoteRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.RequestVoteResponse>): Promise<void> {
+  public async RequestVote(
+    call: grpc.ServerUnaryCall<messages.RequestVoteRequest.AsObject, null>,
+    callback: grpc.sendUnaryData<messages.RequestVoteResponse>
+  ): Promise<void> {
     const response = await this.node.requestVoteHandler(call.request);
-    const grpcResponse = new messages.RequestVoteResponse(); 
+    const grpcResponse = new messages.RequestVoteResponse();
     grpcResponse.setTerm(response.term);
     grpcResponse.setVoteGranted(response.voteGranted);
     callback(null, grpcResponse);
   }
 
-  async AppendEntries(call: grpc.ServerUnaryCall<messages.AppendEntriesRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.AppendEntriesResponse>): Promise<void> {
+  public async AppendEntries(
+    call: grpc.ServerUnaryCall<messages.AppendEntriesRequest.AsObject, null>,
+    callback: grpc.sendUnaryData<messages.AppendEntriesResponse>
+  ): Promise<void> {
     const response = await this.node.appendEntryHandler(call.request);
-    const grpcResponse = new messages.AppendEntriesResponse(); 
+    const grpcResponse = new messages.AppendEntriesResponse();
     grpcResponse.setTerm(response.term);
     grpcResponse.setSuccess(response.success);
     callback(null, grpcResponse);
   }
 
-  async AddServer(call: grpc.ServerUnaryCall<messages.AddServerRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.MembershipChangeResponse>) {
+  public async AddServer(
+    call: grpc.ServerUnaryCall<messages.AddServerRequest.AsObject, null>,
+    callback: grpc.sendUnaryData<messages.MembershipChangeResponse>
+  ) {
     const response = await this.node.addServerHandler(call.request);
-    const grpcResponse = new messages.MembershipChangeResponse(); 
+    const grpcResponse = new messages.MembershipChangeResponse();
     grpcResponse.setStatus(response.status);
     grpcResponse.setLeaderHint(response.leaderHint);
     callback(null, grpcResponse);
   }
-  
-  async RemoveServer(call: grpc.ServerUnaryCall<messages.RemoveServerRequest.AsObject, null>, callback: grpc.sendUnaryData<messages.MembershipChangeResponse>) {
+
+  public async RemoveServer(
+    call: grpc.ServerUnaryCall<messages.RemoveServerRequest.AsObject, null>,
+    callback: grpc.sendUnaryData<messages.MembershipChangeResponse>
+  ) {
     const response = await this.node.removeServerHandler(call.request);
-    const grpcResponse = new messages.MembershipChangeResponse(); 
+    const grpcResponse = new messages.MembershipChangeResponse();
     grpcResponse.setStatus(response.status);
     grpcResponse.setLeaderHint(response.leaderHint);
     callback(null, grpcResponse);
   }
 
-  AddCommand(...args: any[]) {
-    throw new Error("Method not implemented.");
+  public async ClientRequest( call: grpc.ServerUnaryCall<messages.ClientRequestRequest.AsObject, null>,
+    callback: grpc.sendUnaryData<messages.NoResponse>) {
+    await this.node.handleClientRequest(call.request);
+    const grpcResponse = new messages.NoResponse();
+    callback(null, grpcResponse);
   }
-
+  public async ClientQuery( call: grpc.ServerUnaryCall<messages.ClientQueryRequest.AsObject, null>,
+    callback: grpc.sendUnaryData<messages.ClientQueryResponse>) {
+      const response = await this.node.handleClientQuery(call.request.key);
+      const grpcResponse = new messages.ClientQueryResponse();
+      grpcResponse.setStatus(response.status);
+      grpcResponse.setLeaderHint(response.leaderHint);
+      grpcResponse.setResponse(response.response);
+      callback(null, grpcResponse);
+  }
 }

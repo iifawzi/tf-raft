@@ -181,6 +181,75 @@ export namespace MembershipChangeResponse {
     }
 }
 
+export class ClientRequestRequest extends jspb.Message { 
+    getType(): CommandType;
+    setType(value: CommandType): ClientRequestRequest;
+    getData(): string;
+    setData(value: string): ClientRequestRequest;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ClientRequestRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ClientRequestRequest): ClientRequestRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ClientRequestRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ClientRequestRequest;
+    static deserializeBinaryFromReader(message: ClientRequestRequest, reader: jspb.BinaryReader): ClientRequestRequest;
+}
+
+export namespace ClientRequestRequest {
+    export type AsObject = {
+        type: CommandType,
+        data: string,
+    }
+}
+
+export class ClientQueryRequest extends jspb.Message { 
+    getKey(): string;
+    setKey(value: string): ClientQueryRequest;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ClientQueryRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ClientQueryRequest): ClientQueryRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ClientQueryRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ClientQueryRequest;
+    static deserializeBinaryFromReader(message: ClientQueryRequest, reader: jspb.BinaryReader): ClientQueryRequest;
+}
+
+export namespace ClientQueryRequest {
+    export type AsObject = {
+        key: string,
+    }
+}
+
+export class ClientQueryResponse extends jspb.Message { 
+    getStatus(): boolean;
+    setStatus(value: boolean): ClientQueryResponse;
+    getLeaderHint(): string;
+    setLeaderHint(value: string): ClientQueryResponse;
+    getResponse(): string;
+    setResponse(value: string): ClientQueryResponse;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ClientQueryResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: ClientQueryResponse): ClientQueryResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ClientQueryResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ClientQueryResponse;
+    static deserializeBinaryFromReader(message: ClientQueryResponse, reader: jspb.BinaryReader): ClientQueryResponse;
+}
+
+export namespace ClientQueryResponse {
+    export type AsObject = {
+        status: boolean,
+        leaderHint: string,
+        response: string,
+    }
+}
+
 export class LogEntry extends jspb.Message { 
     getTerm(): number;
     setTerm(value: number): LogEntry;
@@ -204,7 +273,30 @@ export namespace LogEntry {
     }
 }
 
+export class NoResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): NoResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: NoResponse): NoResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: NoResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): NoResponse;
+    static deserializeBinaryFromReader(message: NoResponse, reader: jspb.BinaryReader): NoResponse;
+}
+
+export namespace NoResponse {
+    export type AsObject = {
+    }
+}
+
 export enum MEMBERSHIP_CHANGES_RESPONSES {
     OK = 0,
     NOT_LEADER = 1,
+}
+
+export enum CommandType {
+    NOOP = 0,
+    STORE_SET = 1,
+    STORE_DEL = 2,
 }

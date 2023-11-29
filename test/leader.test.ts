@@ -91,8 +91,7 @@ describe("Leaders", () => {
 
       await sleep(300);
 
-      const command = "COMMAND-TEST";
-      await server1.AddCommand({ type: CommandType.TESTING, data: command});
+      await server1.ClientRequest({ type: CommandType.STORE_SET, data: { key: 'test', value: 'working' }});
       const leaderLastLog = await node1.nodeStore.getLastLogEntry();
 
       await sleep(300);

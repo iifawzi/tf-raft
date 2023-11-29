@@ -98,7 +98,7 @@ describe("Membership & Nodes Configurations", () => {
 
         await sleep(300);
 
-        await server1.AddCommand({ type: CommandType.TESTING, data: 'TEST_COMMAND'});
+        await server1.ClientRequest({ type: CommandType.STORE_SET, data: { key: 'test', value: 'working' }});
         await sleep(300);
 
         const leaderTerm = await node1.nodeStore.getCurrentTerm();
@@ -198,7 +198,7 @@ describe("Membership & Nodes Configurations", () => {
         server1.RemoveServer({ oldServer: "NODE3" });
         
         await sleep(300);
-        await server1.AddCommand({ type: CommandType.TESTING, data: 'TEST_COMMAND'});
+        await server1.ClientRequest({ type: CommandType.STORE_SET, data: { key: 'test', value: 'working' }});
         await sleep(300);
 
         const leaderLastLog = await node1.nodeStore.getLastLogEntry();

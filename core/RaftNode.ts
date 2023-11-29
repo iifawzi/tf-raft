@@ -12,6 +12,7 @@ import {
   AddServerRequest,
   AppendEntryRequest,
   AppendEntryResponse,
+  ClientQueryResponse,
   MEMBERSHIP_CHANGES_RESPONSES,
   MembershipChangeResponse,
   RemoveServerRequest,
@@ -561,16 +562,34 @@ export class RaftNode {
   /**********************
    Client Interaction
    **********************/
-  public async AddCommand(
-    command: Command<any>
-  ): Promise<{ status: boolean; data: null | string }> {
+  public async handleClientRequest(command: Command<any>) {
+    // as an improvement here: we should reply with status and response only after the log is applied.
+    const leaderId = this.stateManager.getLeaderId() ?? '';
     if (this.nodeState == STATES.LEADER) {
       const currentTerm = await this.stateManager.getCurrentTerm();
       await this.stateManager.appendEntries([{ term: currentTerm, command }]);
-      return { status: true, data: null };
+      return { status: true, leaderHint: leaderId };
     }
-    return { status: false, data: this.stateManager.getLeaderId() ?? null };
+    return { status: false, leaderHint: leaderId };
   }
+
+  public handleClientQuery(key: string): ClientQueryResponse {
+    // as an improvement, we can implement only-once semantics to achieve linerazability. Sec 6.4
+    const leaderId = this.stateManager.getLeaderId() ?? '';
+    if (this.nodeState == STATES.LEADER) {
+      return {
+        status: true,
+        leaderHint: leaderId,
+        response: this.store.GET(key),
+      };
+    }
+    return {
+      status: false,
+      leaderHint: leaderId,
+      response: '',
+    };
+  }
+
   public async GetValue(key: string): Promise<string | null> {
     return this.store.GET(key) || null;
   }
@@ -601,11 +620,10 @@ export class RaftNode {
     }
   }
 
-  // TODO:: Improve
   private logApplier(logEntry: LogEntry) {
     switch (logEntry.command.type) {
       case CommandType.MEMBERSHIP_ADD:
-        console.error("MEMBERSHIP_ADD command applier");
+        console.log("MEMBERSHIP_ADD command applier");
         if (logEntry.command.data !== this.nodeId) {
           this.applyMembershipAdd(logEntry.command.data);
         }
