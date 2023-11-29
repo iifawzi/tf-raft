@@ -4,8 +4,7 @@ import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 
 export class FixedCluster {
-  private nodes: RaftNode[] = [];
-
+  public nodes: RaftNode[] = [];
   public async start() {
     const network = MemoryNetwork.getNetwork();
 
@@ -18,7 +17,8 @@ export class FixedCluster {
       nodeIdentifier1,
       server1,
       state1,
-      "MEMORY"
+      "MEMORY",
+      true
     );
     this.nodes.push(node1);
 
@@ -79,23 +79,5 @@ export class FixedCluster {
       this.nodes.push(node5);
       server1.AddServer({ newServer: nodeIdentifier5 });
     }, 310);
-  }
-
-  public getLeader(): RaftNode {
-    // leader discovery
-    let leader = undefined;
-    for (let i = 0; i < this.nodes.length; i++) {
-      const node = this.nodes[i];
-      if (node.nodeState == STATES.LEADER) {
-        leader = node;
-        break;
-      }
-    }
-
-    if (!leader) {
-      console.log("NO LEADER HAS BEEN FOUND, RETRYING");
-      return this.getLeader();
-    }
-    return leader;
   }
 }
