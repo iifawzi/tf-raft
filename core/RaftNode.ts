@@ -13,6 +13,7 @@ import {
   AppendEntryRequest,
   AppendEntryResponse,
   ClientQueryResponse,
+  ClientRequestResponse,
   MEMBERSHIP_CHANGES_RESPONSES,
   MembershipChangeResponse,
   RemoveServerRequest,
@@ -562,7 +563,7 @@ export class RaftNode {
   /**********************
    Client Interaction
    **********************/
-  public async handleClientRequest(command: Command<any>) {
+  public async handleClientRequest(command: Command<any>): Promise<ClientRequestResponse> {
     // as an improvement here: we should reply with status and response only after the log is applied.
     const leaderId = this.stateManager.getLeaderId() ?? '';
     if (this.nodeState == STATES.LEADER) {
@@ -580,7 +581,7 @@ export class RaftNode {
       return {
         status: true,
         leaderHint: leaderId,
-        response: this.store.GET(key),
+        response: this.store.GET(key) ?? null,
       };
     }
     return {
@@ -588,10 +589,6 @@ export class RaftNode {
       leaderHint: leaderId,
       response: '',
     };
-  }
-
-  public async GetValue(key: string): Promise<string | null> {
-    return this.store.GET(key) || null;
   }
   /**********************
    Fixed membership configurator & utils

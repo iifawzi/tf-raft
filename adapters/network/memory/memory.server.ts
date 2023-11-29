@@ -4,6 +4,7 @@ import {
   AppendEntryRequest,
   AppendEntryResponse,
   ClientQueryResponse,
+  ClientRequestResponse,
   MembershipChangeResponse,
   RemoveServerRequest,
   RequestVoteRequest,
@@ -47,8 +48,10 @@ export class MemoryServer implements Server {
   }
 
   // client requests are meant to do change to the machine's state.
-  public async ClientRequest(request: Command<any>): Promise<void> {
-    await this.node.handleClientRequest(request);
+  public async ClientRequest(
+    request: Command<any>
+  ): Promise<ClientRequestResponse> {
+    return await this.node.handleClientRequest(request);
   }
 
   // client query are read-only
