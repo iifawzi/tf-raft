@@ -1,17 +1,36 @@
 import "module-alias/register";
 import readline from "readline";
-import { CommandType } from "./interfaces";
+import { CommandType, RaftCluster } from "./interfaces";
 import { sleep } from "./utils";
 import { gRPCCluster } from "./clusters/grpc.cluster";
 import { MemoryCluster } from "./clusters/memory.cluster";
 
-const cluster = new gRPCCluster();
+let cluster: RaftCluster;
 
 (async () => {
   // it's used for debugging only, if enabled, the prompt will be messed up. 
   // because of the raft logs.
   console.log = () => {};
-  cluster.start();
+  
+  const args = process.argv;
+  const protocol = args[2] ?? 'memory';
+  const nodesNumber = args[3] ?? 3;
+
+  if (protocol !== 'memory' && protocol !== 'rpc') {
+    throw new Error(`ONLY MEMORY & RPC Protocols are supported, you inserted ${protocol}`,);
+  }
+
+  if (Number(nodesNumber) < 3) {
+    throw new Error(`The minimum number of nodes is 3, you inserted ${nodesNumber}`);
+  }
+
+  if (protocol == 'memory') {
+    cluster = new MemoryCluster(Number(nodesNumber));
+  } else {
+    cluster = new gRPCCluster(Number(nodesNumber));
+  }
+  
+  await cluster.start();
   await sleep(1000);
   let leader = cluster.connections[0];
 
@@ -38,7 +57,7 @@ const cluster = new gRPCCluster();
         });
         if (setResponse.leaderHint) {
           leader = cluster.connections.filter(
-            (connection) => connection.peerId == response.leaderHint
+            (connection) => connection.peerId == setResponse.leaderHint
           )[0];
           processCommand(command);
         }
