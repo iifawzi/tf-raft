@@ -6,6 +6,9 @@
         "HSET",
         "linerazability",
         "oneofs",
-        "protobuf"
+        "protobuf",
+        "SDEL",
+        "SGET",
+        "SSET"
     ]
 }

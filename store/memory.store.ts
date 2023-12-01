@@ -47,4 +47,34 @@ export class MemoryStore implements Store {
       }
     }
   }
+
+  SSET(setKey: string, values: [string]): void {
+    let set = this.store.get(setKey);
+    if (!set) {
+      set = new Set();
+      this.store.set(setKey, set);
+    }
+
+    for ( let i = 0;i < values.length; i++) {
+      set.add(values[i]);
+    }
+    this.store.set(setKey, set);
+  }
+
+  SHAS(setKey: string, value: string): string | null {
+    const set = this.store.get(setKey);
+    if (!set) {
+      return null;
+    }
+    return set.has(value);
+  }
+  
+  SDEL(setKey: string, values: [string]): void {
+    const set = this.store.get(setKey);
+    if (set) {
+      for ( let i = 0; i < values.length; i++) {
+        set.delete(values[i]);
+      }
+    }
+  }
 }

@@ -181,6 +181,78 @@ let cluster: RaftCluster;
         }
         rl.prompt();
         break;
+      case "SDEL":
+        if (args.length !== 3) {
+          console.info(
+            "Error: SDEL command requires a set name and values to be deleted: SDEL set_name value1 [value2 value3 ...]"
+          );
+          break;
+        }
+        const [, , ...sdelValues] = args;
+        const sdelResponse = await leader.clientRequest({
+          type: CommandType.STORE_SDEL,
+          data: {
+            setKey: args[1].toLowerCase(),
+            values: sdelValues,
+          },
+        });
+        if (sdelResponse.leaderHint) {
+          leader = cluster.connections.filter(
+            (connection) => connection.peerId == sdelResponse.leaderHint
+          )[0];
+          processCommand(command);
+        }
+        rl.prompt();
+        break;
+      case "SSET":
+        if (args.length < 3) {
+          console.info(
+            "Error: SSET command requires a set name and values: SSET set_name value1 [value2 ...]"
+          );
+          break;
+        }
+        const [, , ...ssetValues] = args;
+        const ssetResponse = await leader.clientRequest({
+          type: CommandType.STORE_SSET,
+          data: {
+            setKey: args[1].toLowerCase(),
+            values: ssetValues,
+          },
+        });
+        if (ssetResponse.leaderHint) {
+          leader = cluster.connections.filter(
+            (connection) => connection.peerId == ssetResponse.leaderHint
+          )[0];
+          processCommand(command);
+        }
+        rl.prompt();
+        break;
+      case "SHAS":
+        if (args.length !== 3) {
+          console.info(
+            "Error: SHAS command requires a set name, and value argument: SHAS set_name value"
+          );
+          break;
+        }
+        const shasResponse = await leader.clientQuery({
+          type: QueryType.SHAS,
+          data: {
+            setKey: args[1].toLowerCase(),
+            value: args[2].toLowerCase(),
+          },
+        });
+        if (shasResponse.leaderHint) {
+          leader = cluster.connections.filter(
+            (connection) => connection.peerId == shasResponse.leaderHint
+          )[0];
+          processCommand(command);
+        } else {
+          console.info(
+            shasResponse.response == "" ? false : shasResponse.response
+          );
+        }
+        rl.prompt();
+        break;
       case "EXIT":
         rl.close();
         process.exit(0);

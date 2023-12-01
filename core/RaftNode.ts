@@ -575,7 +575,7 @@ export class RaftNode {
     // as an improvement, we can implement only-once semantics to achieve linerazability. Sec 6.4
     const leaderId = this.stateManager.getLeaderId() ?? '';
     if (this.nodeState == STATES.LEADER) {
-      let value: string | null;
+      let value: string | null = '';
       switch(query.type) {
         case QueryType.GET:
           value = this.store.GET(query.data.key);
@@ -583,11 +583,14 @@ export class RaftNode {
         case QueryType.HGET:
           value = this.store.HGET(query.data.hashKey, query.data.key);
           break;
+        case QueryType.SHAS:
+          value = this.store.SHAS(query.data.setKey, query.data.value);
+          break;
       }
       return {
         status: true,
         leaderHint: leaderId,
-        response: value ?? '',
+        response: value == null ? '' : value,
       };
     }
     return {
@@ -652,6 +655,16 @@ export class RaftNode {
         console.log("STORE_HDEL command applier");
         const hdelKeys = logEntry.command.data.keys;
         this.store.HDEL(logEntry.command.data.hashKey, hdelKeys);
+        break;
+      case CommandType.STORE_SSET:
+        console.log("STORE_SSET command applier");
+        const setValues = logEntry.command.data.values;
+        this.store.SSET(logEntry.command.data.setKey, setValues);
+        break;
+      case CommandType.STORE_SDEL:
+        console.log("STORE_SDEL command applier");
+        const sdelValues = logEntry.command.data.values;
+        this.store.SDEL(logEntry.command.data.setKey, sdelValues);
         break;
       default:
         console.log("UNHANDLED COMMAND", logEntry.command);
