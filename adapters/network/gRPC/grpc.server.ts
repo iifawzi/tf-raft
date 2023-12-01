@@ -1,4 +1,4 @@
-import { Command, Server } from "@/interfaces";
+import { Command, Query, Server } from "@/interfaces";
 import * as grpc from "@grpc/grpc-js";
 import { RaftNode } from "@/core";
 import * as protoLoader from "@grpc/proto-loader";
@@ -106,8 +106,8 @@ export class gRPCServer implements Server {
     await this.node.handleClientRequest(request);
     callback(null, {});
   }
-  public ClientQuery(call: { request: { key: string } }, callback: any) {
-    const response = this.node.handleClientQuery(call.request.key);
+  public ClientQuery(call: { request:  Query }, callback: any) {
+    const response = this.node.handleClientQuery(call.request);
     callback(null, response);
   }
 }

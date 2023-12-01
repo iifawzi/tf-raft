@@ -3,7 +3,7 @@ import { LocalStateManager } from "@/adapters/state";
 import { RaftNode } from "@/core";
 import { sleep } from "@/utils";
 import { removeAndCreateDir } from "./helpers/deleteDir.helper";
-import { CommandType } from "@/interfaces";
+import { CommandType, QueryType } from "@/interfaces";
 
 describe("Store Operations", () => {
   console.log = jest.fn();
@@ -15,7 +15,7 @@ describe("Store Operations", () => {
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB/cand1");
+      const state1 = new LocalStateManager("NODE1", "testDB/store1");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -27,14 +27,14 @@ describe("Store Operations", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB/cand1");
+      const state2 = new LocalStateManager("NODE2", "testDB/store1");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testDB/cand1");
+      const state3 = new LocalStateManager("NODE3", "testDB/store1");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       server1.AddServer({ newServer: "NODE3" });
 
@@ -48,9 +48,12 @@ describe("Store Operations", () => {
       expect(requestResponse.leaderHint).toEqual(node1.nodeId);
       await sleep(500);
 
-      const queryResponse = server2.ClientQuery({ key: "testing" });
+      const queryResponse = server2.ClientQuery({
+        type: QueryType.GET,
+        data: { key: "testing" },
+      });
       expect(queryResponse.status).toEqual(false);
-      expect(queryResponse.response).toEqual('');
+      expect(queryResponse.response).toEqual("");
       expect(queryResponse.leaderHint).toEqual(node1.nodeId);
       node1.stopListeners();
       node2.stopListeners();
@@ -59,60 +62,141 @@ describe("Store Operations", () => {
   });
 
   describe("Communicating with the leader", () => {
-    it("it should get the value that has been set correctly", async () => {
-      await removeAndCreateDir("testDB/store2");
-      const network = MemoryNetwork.getTestNetwork();
-      // 1
-      const server1 = new MemoryServer();
-      network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testDB/cand1");
-      const node1 = await RaftNode.create(
-        "NODE1",
-        server1,
-        state1,
-        "MEMORY",
-        true
-      );
-      await sleep(300);
-      // 2
-      const server2 = new MemoryServer();
-      network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testDB/cand1");
-      const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
-      server1.AddServer({ newServer: "NODE2" });
+    describe("STRING STORE", () => {
+      it("it should get the value that has been set correctly", async () => {
+        await removeAndCreateDir("testDB/store2");
+        const network = MemoryNetwork.getTestNetwork();
+        // 1
+        const server1 = new MemoryServer();
+        network.addServer("NODE1", server1);
+        const state1 = new LocalStateManager("NODE1", "testDB/store2");
+        const node1 = await RaftNode.create(
+          "NODE1",
+          server1,
+          state1,
+          "MEMORY",
+          true
+        );
+        await sleep(300);
+        // 2
+        const server2 = new MemoryServer();
+        network.addServer("NODE2", server2);
+        const state2 = new LocalStateManager("NODE2", "testDB/store2");
+        const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+        server1.AddServer({ newServer: "NODE2" });
+        // 3
+        const server3 = new MemoryServer();
+        network.addServer("NODE3", server3);
+        const state3 = new LocalStateManager("NODE3", "testDB/store2");
+        const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
+        server1.AddServer({ newServer: "NODE3" });
 
-      // 3
-      const server3 = new MemoryServer();
-      network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testDB/cand1");
-      const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
-      server1.AddServer({ newServer: "NODE3" });
+        await sleep(300);
 
-      await sleep(300);
+        await server1.ClientRequest({
+          type: CommandType.STORE_SET,
+          data: { key: "testing", value: "SHOULD_EQUAL1" },
+        });
 
-      await server1.ClientRequest({
-        type: CommandType.STORE_SET,
-        data: { key: "testing", value: "SHOULD_EQUAL1" },
+        await sleep(500);
+
+        const queryResponse = server1.ClientQuery({
+          type: QueryType.GET,
+          data: { key: "testing" },
+        });
+        expect(queryResponse.response).toEqual("SHOULD_EQUAL1");
+
+        await server1.ClientRequest({
+          type: CommandType.STORE_DEL,
+          data: { key: "testing" },
+        });
+
+        await sleep(500);
+
+        const queryResponse2 = server1.ClientQuery({
+          type: QueryType.GET,
+          data: { key: "testing" },
+        });
+        expect(queryResponse2.response).toEqual("");
+
+        node1.stopListeners();
+        node2.stopListeners();
+        node3.stopListeners();
       });
+    });
 
-      await sleep(500);
+    describe("HASH STORE", () => {
+      it("it should get the value that has been set correctly", async () => {
+        await removeAndCreateDir("testDB/store2");
+        const network = MemoryNetwork.getTestNetwork();
+        // 1
+        const server1 = new MemoryServer();
+        network.addServer("NODE1", server1);
+        const state1 = new LocalStateManager("NODE1", "testDB/store2");
+        const node1 = await RaftNode.create(
+          "NODE1",
+          server1,
+          state1,
+          "MEMORY",
+          true
+        );
+        await sleep(300);
+        // 2
+        const server2 = new MemoryServer();
+        network.addServer("NODE2", server2);
+        const state2 = new LocalStateManager("NODE2", "testDB/store2");
+        const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
+        server1.AddServer({ newServer: "NODE2" });
 
-      const queryResponse = server1.ClientQuery({ key: "testing" });
-      expect(queryResponse.response).toEqual("SHOULD_EQUAL1");
+        // 3
+        const server3 = new MemoryServer();
+        network.addServer("NODE3", server3);
+        const state3 = new LocalStateManager("NODE3", "testDB/store2");
+        const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
+        server1.AddServer({ newServer: "NODE3" });
 
-      await server1.ClientRequest({
-        type: CommandType.STORE_DEL,
-        data: { key: "testing" },
+        await sleep(300);
+
+        await server1.ClientRequest({
+          type: CommandType.STORE_HSET,
+          data: { hashKey: "hash", pairs: ["key1:value1", "key2:value2"]},
+        });
+
+        await sleep(500);
+
+        const queryResponse = server1.ClientQuery({
+          type: QueryType.HGET,
+          data: { hashKey: "hash", key: "key1" },
+        });
+        const queryResponse2 = server1.ClientQuery({
+          type: QueryType.HGET,
+          data: { hashKey: "hash", key: "key2" },
+        });
+        expect(queryResponse.response).toEqual("value1");
+        expect(queryResponse2.response).toEqual("value2");
+
+        await server1.ClientRequest({
+          type: CommandType.STORE_HDEL,
+          data: { hashKey: "hash", keys: ["key1", "key2"] },
+        });
+
+        await sleep(500);
+
+        const queryResponse3 = server1.ClientQuery({
+          type: QueryType.HGET,
+          data: { hashKey: "hash", key: "key2" },
+        });
+        const queryResponse4 = server1.ClientQuery({
+          type: QueryType.HGET,
+          data: { hashKey: "hash", key: "key1" },
+        });
+        expect(queryResponse3.response).toEqual("");
+        expect(queryResponse4.response).toEqual("");
+
+        node1.stopListeners();
+        node2.stopListeners();
+        node3.stopListeners();
       });
-
-      await sleep(500);
-      
-      const queryResponse2 = server1.ClientQuery({ key: "testing" });
-      expect(queryResponse2.response).toEqual(null);
-
-      node1.stopListeners();
-      node2.stopListeners();
-      node3.stopListeners();
     });
   });
 });

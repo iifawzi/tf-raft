@@ -1,6 +1,9 @@
 {
     "cSpell.words": [
         "dtos",
+        "HDEL",
+        "HGET",
+        "HSET",
         "linerazability",
         "oneofs",
         "protobuf"

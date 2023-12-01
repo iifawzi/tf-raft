@@ -10,7 +10,7 @@ import {
   RequestVoteRequest,
   RequestVoteResponse,
 } from "@/dtos";
-import { Command, Server } from "@/interfaces";
+import { Command, Query, Server } from "@/interfaces";
 
 export class MemoryServer implements Server {
   private node!: RaftNode;
@@ -55,7 +55,7 @@ export class MemoryServer implements Server {
   }
 
   // client query are read-only
-  public ClientQuery({ key }: { key: string }): ClientQueryResponse {
-    return this.node.handleClientQuery(key);
+  public ClientQuery(query: Query): ClientQueryResponse {
+    return this.node.handleClientQuery(query);
   }
 }

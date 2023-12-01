@@ -10,7 +10,7 @@ import {
   ClientQueryResponse,
   ClientRequestResponse,
 } from "@/dtos";
-import { Command, PeerConnection } from "@/interfaces";
+import { Command, PeerConnection, Query } from "@/interfaces";
 import * as protoLoader from "@grpc/proto-loader";
 export class gRPCPeer implements PeerConnection {
   private client!: any;
@@ -137,10 +137,10 @@ export class gRPCPeer implements PeerConnection {
     });
   }
 
-  async clientQuery(key: string): Promise<ClientQueryResponse> {
+  async clientQuery(query: Query): Promise<ClientQueryResponse> {
     return new Promise((resolve, reject) => {
       this.client.clientQuery(
-        { key },
+        query,
         (error: any, response: ClientQueryResponse) => {
           if (error) {
             reject(error);

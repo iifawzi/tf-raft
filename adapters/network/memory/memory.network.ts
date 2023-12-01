@@ -10,7 +10,7 @@ import {
   RequestVoteResponse,
 } from "@/dtos";
 import { MemoryServer } from "./memory.server";
-import { Command } from "@/interfaces";
+import { Command, Query } from "@/interfaces";
 
 export class MemoryNetwork {
   public nodes: Record<string, MemoryServer> = {};
@@ -64,9 +64,9 @@ export class MemoryNetwork {
 
   public clientQueryToNode(
     nodeId: string,
-    key: string
+    query: Query
   ): ClientQueryResponse {
-    const response = this.nodes[nodeId].ClientQuery({ key });
+    const response = this.nodes[nodeId].ClientQuery(query);
     return response;
   }
 

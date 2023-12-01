@@ -10,6 +10,7 @@ import {
   RequestVoteResponse,
 } from "@/dtos";
 import { Command } from "./Command";
+import { Query } from "./Query";
 
 export interface PeerConnection {
   peerId: string;
@@ -25,6 +26,6 @@ export interface PeerConnection {
   // used by clients/admins
   addServer(request: AddServerRequest): Promise<MembershipChangeResponse>;
   removeServer(request: RemoveServerRequest): Promise<MembershipChangeResponse>;
-  clientQuery(key: string): Promise<ClientQueryResponse>;
+  clientQuery(request: Query): Promise<ClientQueryResponse>;
   clientRequest(request: Command<any>): Promise<ClientRequestResponse>;
 }

@@ -3,6 +3,8 @@ import {
   CommandType,
   LogEntry,
   PeerConnection,
+  Query,
+  QueryType,
   Server,
   StateManager,
 } from "@/interfaces";
@@ -569,14 +571,23 @@ export class RaftNode {
     return { status: false, leaderHint: leaderId };
   }
 
-  public handleClientQuery(key: string): ClientQueryResponse {
+  public handleClientQuery(query: Query): ClientQueryResponse {
     // as an improvement, we can implement only-once semantics to achieve linerazability. Sec 6.4
     const leaderId = this.stateManager.getLeaderId() ?? '';
     if (this.nodeState == STATES.LEADER) {
+      let value: string | null;
+      switch(query.type) {
+        case QueryType.GET:
+          value = this.store.GET(query.data.key);
+          break;
+        case QueryType.HGET:
+          value = this.store.HGET(query.data.hashKey, query.data.key);
+          break;
+      }
       return {
         status: true,
         leaderHint: leaderId,
-        response: this.store.GET(key) ?? null,
+        response: value ?? '',
       };
     }
     return {
@@ -631,6 +642,16 @@ export class RaftNode {
       case CommandType.STORE_DEL:
         console.log("STORE_DEL command applier");
         this.store.DEL(logEntry.command.data.key);
+        break;
+      case CommandType.STORE_HSET:
+        console.log("STORE_HSET command applier");
+        const hsetPairs = logEntry.command.data.pairs;
+        this.store.HSET(logEntry.command.data.hashKey, hsetPairs);
+        break;
+      case CommandType.STORE_HDEL:
+        console.log("STORE_HDEL command applier");
+        const hdelKeys = logEntry.command.data.keys;
+        this.store.HDEL(logEntry.command.data.hashKey, hdelKeys);
         break;
       default:
         console.log("UNHANDLED COMMAND", logEntry.command);

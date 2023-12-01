@@ -9,7 +9,7 @@ import {
   ClientQueryResponse,
   ClientRequestResponse,
 } from "@/dtos";
-import { Command, PeerConnection } from "@/interfaces";
+import { Command, PeerConnection, Query } from "@/interfaces";
 import { MemoryNetwork } from "./memory.network";
 
 export class MemoryPeer implements PeerConnection {
@@ -58,8 +58,8 @@ export class MemoryPeer implements PeerConnection {
     return response;
   }
 
-  public async clientQuery(key: string): Promise<ClientQueryResponse> {
-    const response = this.network.clientQueryToNode(this.peerId, key);
+  public async clientQuery(query: Query): Promise<ClientQueryResponse> {
+    const response = this.network.clientQueryToNode(this.peerId, query);
     return response;
   }
   public async clientRequest(
