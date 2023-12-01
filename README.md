@@ -2,7 +2,7 @@
 
 ### About the Project
 
-tf-raft is a non-production-ready, reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
+tf-raft is a <b>non-production-ready</b>, reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
 
 The system supports three types of data stores: `HASH`, `SET`, and `STRING`.
 
