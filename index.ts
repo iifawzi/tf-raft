@@ -40,6 +40,7 @@ const cluster = new gRPCCluster();
           leader = cluster.connections.filter(
             (connection) => connection.peerId == response.leaderHint
           )[0];
+          processCommand(command);
         }
         rl.prompt();
         break;
@@ -59,6 +60,7 @@ const cluster = new gRPCCluster();
           leader = cluster.connections.filter(
             (connection) => connection.peerId == response.leaderHint
           )[0];
+          processCommand(command);
         }
         rl.prompt();
         break;
@@ -73,6 +75,7 @@ const cluster = new gRPCCluster();
           leader = cluster.connections.filter(
             (connection) => connection.peerId == queryResponse.leaderHint
           )[0];
+          processCommand(command);
         } else {
          console.info(queryResponse.response == '' ? null : queryResponse.response);
         }
