@@ -1,12 +1,12 @@
-## tf-raft: Distributed Key-Value Store for educational fun!
+# tf-raft: Distributed Key-Value Store for educational fun!
 
-### About the Project
+## About the Project
 
 tf-raft is a <b>non-production-ready</b>, reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
 
 The system supports three types of data stores: `HASH`, `SET`, and `STRING`.
 
-### Raft Consensus Protocol
+## Raft Consensus Protocol
 
 The implementation of tf-raft is based on the ["CONSENSUS: BRIDGING THEORY AND PRACTICE"](https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf) dissertation. Raft is a consensus protocol designed to be easy to understand. In essence, Raft ensures that a distributed system reaches a consensus on a single value even if some of the nodes in the system fail or behave maliciously.
 
@@ -21,7 +21,7 @@ tf-raft implements the three core components of the RAFT Consensus Protocol:
 The core of tf-raft is fully isolated and independent from the infrastructure, relying on ports and adapters for high flexibility.
 tf-raft currently supports `gRPC` and `In-Memory` adapters for the network layer & `In-Memory` and `JSON-Based` adapters for volatile and non-volatile states, respectively. 
 
-### Commands and Usage
+## Commands and Usage
 
 Below are the commands supported by tf-raft, along with their descriptions and example usage:
 
@@ -39,10 +39,10 @@ Below are the commands supported by tf-raft, along with their descriptions and e
 
 Please note that tf-raft is not intended for production use and serves solely as an educational tool.
 
-### License
+## License
 
 [MIT](LICENSE)
 
-### Copyright
+## Copyright
 
-Copyright (c) 2023 Fawzi Abdulfattah 
+Copyright (c) 2023 Fawzi Abdulfattah
