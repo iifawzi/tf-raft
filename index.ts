@@ -71,7 +71,7 @@ const cluster = new gRPCCluster();
         const queryResponse = await leader.clientQuery(args[1].toLowerCase());
         if (queryResponse.leaderHint) {
           leader = cluster.connections.filter(
-            (connection) => connection.peerId == response.leaderHint
+            (connection) => connection.peerId == queryResponse.leaderHint
           )[0];
         } else {
          console.info(queryResponse.response == '' ? null : queryResponse.response);
