@@ -224,9 +224,6 @@ export class RaftNode {
       const prevLogIndex = nextIndex - 1;
       if (prevLogIndex >= 0) {
         const log = await this.stateManager.getLogAtIndex(prevLogIndex);
-        if (log == undefined) {
-          console.info(log, prevLogIndex, this.nodeId);
-        }
         prevLogTerm = log.term;
       }
 

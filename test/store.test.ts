@@ -1,8 +1,8 @@
 import { MemoryNetwork, MemoryServer } from "@/adapters/network/memory";
 import { LocalStateManager } from "@/adapters/state";
-import { RaftNode, STATES } from "@/core";
+import { RaftNode } from "@/core";
 import { sleep } from "@/utils";
-import { removeDir } from "./helpers/deleteDir.helper";
+import { removeAndCreateDir } from "./helpers/deleteDir.helper";
 import { CommandType } from "@/interfaces";
 
 describe("Store Operations", () => {
@@ -10,12 +10,12 @@ describe("Store Operations", () => {
 
   describe("Communicating with node other than leader", () => {
     it("should reject the request and hint the leader", async () => {
-      await removeDir("testdb/store1");
+      await removeAndCreateDir("testDB/store1");
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testdb/cand1");
+      const state1 = new LocalStateManager("NODE1", "testDB/cand1");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -27,14 +27,14 @@ describe("Store Operations", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testdb/cand1");
+      const state2 = new LocalStateManager("NODE2", "testDB/cand1");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testdb/cand1");
+      const state3 = new LocalStateManager("NODE3", "testDB/cand1");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       server1.AddServer({ newServer: "NODE3" });
 
@@ -60,12 +60,12 @@ describe("Store Operations", () => {
 
   describe("Communicating with the leader", () => {
     it("it should get the value that has been set correctly", async () => {
-      await removeDir("testdb/store2");
+      await removeAndCreateDir("testDB/store2");
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testdb/cand1");
+      const state1 = new LocalStateManager("NODE1", "testDB/cand1");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -77,14 +77,14 @@ describe("Store Operations", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testdb/cand1");
+      const state2 = new LocalStateManager("NODE2", "testDB/cand1");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       server1.AddServer({ newServer: "NODE2" });
 
       // 3
       const server3 = new MemoryServer();
       network.addServer("NODE3", server3);
-      const state3 = new LocalStateManager("NODE3", "testdb/cand1");
+      const state3 = new LocalStateManager("NODE3", "testDB/cand1");
       const node3 = await RaftNode.create("NODE3", server3, state3, "MEMORY");
       server1.AddServer({ newServer: "NODE3" });
 

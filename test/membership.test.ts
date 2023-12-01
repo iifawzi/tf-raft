@@ -3,7 +3,7 @@ import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 import { MEMBERSHIP_CHANGES_RESPONSES } from "@/dtos";
 import { sleep } from "@/utils";
-import { removeDir } from "./helpers/deleteDir.helper";
+import { removeAndCreateDir } from "./helpers/deleteDir.helper";
 import { CommandType } from "@/interfaces";
 
 describe("Membership & Nodes Configurations", () => {
@@ -11,7 +11,7 @@ describe("Membership & Nodes Configurations", () => {
 
     describe("Single node becomes leader", () => {
       it("single node should become leader and a configuration log should be created", async () => {
-      await removeDir('testdb/memb1')
+      await removeAndCreateDir('testDB/memb1')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
@@ -34,7 +34,7 @@ describe("Membership & Nodes Configurations", () => {
 
     describe("Non-Leaders should reject removing or adding nodes", () => {
       it("Node should reject adding/removing node if it's not leader", async () => {
-      await removeDir('testdb/memb2')
+      await removeAndCreateDir('testDB/memb2')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
@@ -69,7 +69,7 @@ describe("Membership & Nodes Configurations", () => {
 
     describe("AddServer should add the node to the cluster and replicate the configuration log to all nodes", () => {
       it("Nodes should be added and the logs should be replicated", async () => {
-        await removeDir('testdb/memb3')
+        await removeAndCreateDir('testDB/memb3')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
@@ -121,7 +121,7 @@ describe("Membership & Nodes Configurations", () => {
       });
 
       it("Peers should not be replicated twice", async () => {
-        await removeDir('testdb/memb4')
+        await removeAndCreateDir('testDB/memb4')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);
@@ -164,7 +164,7 @@ describe("Membership & Nodes Configurations", () => {
 
     describe("RemoveServer should add the node to the cluster and replicate the configuration log to all nodes", () => {
       it("Nodes should be removed and the logs should no longer be replicated to it", async () => {
-        await removeDir('testdb/memb5')
+        await removeAndCreateDir('testDB/memb5')
         const network = MemoryNetwork.getTestNetwork();
         const server1 = new MemoryServer();
         network.addServer("NODE1", server1);

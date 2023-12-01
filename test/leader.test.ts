@@ -5,7 +5,7 @@ import {
 import { LocalStateManager } from "@/adapters/state";
 import { RaftNode, STATES } from "@/core";
 import { sleep } from "@/utils";
-import { removeDir } from "./helpers/deleteDir.helper";
+import { removeAndCreateDir } from "./helpers/deleteDir.helper";
 import { CommandType } from "@/interfaces";
 
 describe("Leaders", () => {
@@ -13,7 +13,7 @@ describe("Leaders", () => {
 
   describe("Leader appends no-op entry after becoming a leader", () => {
     it("no-op entry should be replicated to all nodes", async () => {
-      await removeDir('testdb/led1')
+      await removeAndCreateDir('testDB/led1')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
@@ -61,7 +61,7 @@ describe("Leaders", () => {
 
   describe("Leader appends commands and replicate them", () => {
     it("command should be appended to leader and replicated to all nodes", async () => {
-      await removeDir('testdb/led2')
+      await removeAndCreateDir('testDB/led2')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
@@ -112,7 +112,7 @@ describe("Leaders", () => {
 
   describe("Leader replicate logs and dynamically fix its nextIndex for other nodes", () => {
     it("nextIndex should be decreased if previous log entry doesn't exist and log should be replicated", async () => {
-      await removeDir('testdb/led3')
+      await removeAndCreateDir('testDB/led3')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
@@ -165,7 +165,7 @@ describe("Leaders", () => {
 
   describe("Leader's log should be replicated and follower conflicting logs should be removed", () => {
     it("follower conflicting logs should be removed", async () => {
-      await removeDir('testdb/led4')
+      await removeAndCreateDir('testDB/led4')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
@@ -218,7 +218,7 @@ describe("Leaders", () => {
 
   describe("Commit index is updated after commit to quorum ", () => {
     it("Commit index is updated correctly", async () => {
-      await removeDir('testdb/led5')
+      await removeAndCreateDir('testDB/led5')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
@@ -262,7 +262,7 @@ describe("Leaders", () => {
 
   describe("Match & next indexes are updated after appending entries ", () => {
     it("Match & next indexes are updated correctly", async () => {
-      await removeDir('testdb/led6')
+      await removeAndCreateDir('testDB/led6')
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
@@ -312,12 +312,12 @@ describe("Leaders", () => {
 
   describe("Step down if discovered peer with higher term", () => {
     it("should step down if discovered peer with higher term in append entry response", async () => {
-      await removeDir('testdb/led7');
+      await removeAndCreateDir('testDB/led7');
       const network = MemoryNetwork.getTestNetwork();
       // 1
       const server1 = new MemoryServer();
       network.addServer("NODE1", server1);
-      const state1 = new LocalStateManager("NODE1", "testdb/led7");
+      const state1 = new LocalStateManager("NODE1", "testDB/led7");
       const node1 = await RaftNode.create(
         "NODE1",
         server1,
@@ -331,7 +331,7 @@ describe("Leaders", () => {
       // 2
       const server2 = new MemoryServer();
       network.addServer("NODE2", server2);
-      const state2 = new LocalStateManager("NODE2", "testdb/led7");
+      const state2 = new LocalStateManager("NODE2", "testDB/led7");
       const node2 = await RaftNode.create("NODE2", server2, state2, "MEMORY");
       server1.AddServer({ newServer: "NODE2" });
 
