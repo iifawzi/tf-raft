@@ -1,7 +1,13 @@
-import { Server } from "@/interfaces";
+import { Command, Server } from "@/interfaces";
 import * as grpc from "@grpc/grpc-js";
 import { RaftNode } from "@/core";
 import * as protoLoader from "@grpc/proto-loader";
+import {
+  AddServerRequest,
+  AppendEntryRequest,
+  RemoveServerRequest,
+  RequestVoteRequest,
+} from "@/dtos";
 
 export class gRPCServer implements Server {
   private node!: RaftNode;
@@ -16,13 +22,16 @@ export class gRPCServer implements Server {
    Connections
    *************************/
   private getServer() {
-    const packageDefinition = protoLoader.loadSync("./adapters/network/gRPC/protobuf/service.proto", {
-      keepCase: false,
-      longs: String,
-      enums: Number,
-      defaults: true,
-      oneofs: true,
-    });
+    const packageDefinition = protoLoader.loadSync(
+      "./adapters/network/gRPC/protobuf/service.proto",
+      {
+        keepCase: false,
+        longs: String,
+        enums: Number,
+        defaults: true,
+        oneofs: true,
+      }
+    );
     const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
     const server = new grpc.Server();
     server.addService((protoDescriptor.RaftNode as any).service, {
@@ -57,7 +66,7 @@ export class gRPCServer implements Server {
    *************************/
 
   public async RequestVote(
-    call: any,
+    call: { request: RequestVoteRequest },
     callback: any
   ): Promise<void> {
     const response = await this.node.requestVoteHandler(call.request);
@@ -65,49 +74,39 @@ export class gRPCServer implements Server {
   }
 
   public async AppendEntries(
-    call: any,
+    call: { request: AppendEntryRequest },
     callback: any
   ): Promise<void> {
     const clientRequest = {
       ...call.request,
-      entries: JSON.parse(call.request.entries),
-    }
+      entries: JSON.parse(call.request.entries as unknown as string),
+    };
     const response = await this.node.appendEntryHandler(clientRequest);
     callback(null, response);
   }
 
-  public async AddServer(
-    call: any,
-    callback: any
-  ) {
-
+  public async AddServer(call: { request: AddServerRequest }, callback: any) {
     const response = await this.node.addServerHandler(call.request);
     callback(null, response);
   }
 
   public async RemoveServer(
-    call: any,
-    callback: any,
+    call: { request: RemoveServerRequest },
+    callback: any
   ) {
     const response = await this.node.removeServerHandler(call.request);
     callback(null, response);
   }
 
-  public async ClientRequest(
-    call: any,
-    callback: any,
-  ) {
+  public async ClientRequest(call: { request: Command<any> }, callback: any) {
     const request = {
       ...call.request,
       data: JSON.parse(call.request.data),
-    }
+    };
     await this.node.handleClientRequest(request);
     callback(null, {});
   }
-  public ClientQuery(
-    call: any,
-    callback: any,
-  ) {
+  public ClientQuery(call: { request: { key: string } }, callback: any) {
     const response = this.node.handleClientQuery(call.request.key);
     callback(null, response);
   }
