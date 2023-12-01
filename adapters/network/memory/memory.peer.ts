@@ -3,8 +3,13 @@ import {
   RequestVoteResponse,
   AppendEntryRequest,
   AppendEntryResponse,
+  AddServerRequest,
+  MembershipChangeResponse,
+  RemoveServerRequest,
+  ClientQueryResponse,
+  ClientRequestResponse,
 } from "@/dtos";
-import { PeerConnection } from "@/interfaces";
+import { Command, PeerConnection } from "@/interfaces";
 import { MemoryNetwork } from "./memory.network";
 
 export class MemoryPeer implements PeerConnection {
@@ -33,5 +38,37 @@ export class MemoryPeer implements PeerConnection {
       request
     );
     callback(response);
+  }
+
+  // used by clients / admins
+  public async addServer(
+    request: AddServerRequest
+  ): Promise<MembershipChangeResponse> {
+    const response = await this.network.addServerToNode(this.peerId, request);
+    return response;
+  }
+
+  public async removeServer(
+    request: RemoveServerRequest
+  ): Promise<MembershipChangeResponse> {
+    const response = await this.network.removeServerFromNode(
+      this.peerId,
+      request
+    );
+    return response;
+  }
+
+  public async clientQuery(key: string): Promise<ClientQueryResponse> {
+    const response = this.network.clientQueryToNode(this.peerId, key);
+    return response;
+  }
+  public async clientRequest(
+    request: Command<any>
+  ): Promise<ClientRequestResponse> {
+    const response = await this.network.clientRequestToNode(
+      this.peerId,
+      request
+    );
+    return response;
   }
 }

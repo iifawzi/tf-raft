@@ -20,10 +20,10 @@ import {
   RequestVoteRequest,
   RequestVoteResponse,
 } from "@/dtos";
-import { MemoryPeer } from "@/adapters/network/memory";
 import { membershipAddCMD, membershipRemoveCMD, noOpCMD } from "./commands";
 import { Store } from "@/store/interfaces";
 import { MemoryStore } from "@/store/memory.store";
+import { PeerFactory } from "@/factories";
 export class RaftNode {
   private peers: PeerConnection[] = [];
   private state!: STATES;
@@ -224,14 +224,17 @@ export class RaftNode {
       const prevLogIndex = nextIndex - 1;
       if (prevLogIndex >= 0) {
         const log = await this.stateManager.getLogAtIndex(prevLogIndex);
+        if (log == undefined) {
+          console.info(log, prevLogIndex, this.nodeId);
+        }
         prevLogTerm = log.term;
       }
 
-      let entriesList: LogEntry[] = [];
+      let entries: LogEntry[] = [];
       if (logs.length > nextIndex) {
         // send only the logs[nextIndex].
         // this can be improved as mentioned in the paper to send multiple logs at once.
-        entriesList = [logs[nextIndex]];
+        entries = [logs[nextIndex]];
       }
 
       const request: AppendEntryRequest = {
@@ -239,11 +242,11 @@ export class RaftNode {
         leaderId: this.nodeId,
         prevLogIndex: prevLogIndex,
         prevLogTerm,
-        entriesList,
+        entries,
         leaderCommit,
       };
 
-      if (entriesList.length) {
+      if (entries.length) {
         console.log(
           `${this.nodeId} is about to send log of index ${nextIndex} to node ${peer.peerId}`
         );
@@ -252,7 +255,7 @@ export class RaftNode {
       peer.appendEntries(
         request,
         this.appendEntryResponseReceived(
-          request.entriesList,
+          request.entries,
           peer.peerId,
           currentTerm
         ).bind(this)
@@ -390,9 +393,7 @@ export class RaftNode {
       this.peers.splice(peerIndex, 1);
     }
 
-    if (this.protocol == "MEMORY") {
-      peer = new MemoryPeer(serverIdentifier);
-    }
+    peer = PeerFactory(this.protocol, serverIdentifier);
 
     this.stateManager.setNextIndex(peer.peerId, 0);
     this.stateManager.setMatchIndex(peer.peerId, -1);
@@ -420,10 +421,7 @@ export class RaftNode {
       this.peers.splice(peerIndex, 1);
     }
 
-    if (this.protocol == "MEMORY") {
-      peer = new MemoryPeer(serverIdentifier);
-    }
-
+    peer = PeerFactory(this.protocol, serverIdentifier);
     this.peers.push(peer);
   }
 
@@ -526,7 +524,7 @@ export class RaftNode {
       );
     }
 
-    await this.stateManager.appendEntries(request.entriesList);
+    await this.stateManager.appendEntries(request.entries);
 
     const lastIndex = await this.stateManager.getLastIndex();
     if (request.leaderCommit > commitIndex) {

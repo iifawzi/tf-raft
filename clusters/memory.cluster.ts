@@ -1,13 +1,14 @@
 import { MemoryServer } from "@/adapters/network/memory";
 import { MemoryNetwork } from "@/adapters/network/memory/memory.network";
 import { LocalStateManager } from "@/adapters/state";
-import { RaftNode, STATES } from "@/core";
+import { RaftNode } from "@/core";
+import { PeerFactory } from "@/factories";
+import { PeerConnection } from "@/interfaces";
 
-export class FixedCluster {
-  public nodes: RaftNode[] = [];
+export class MemoryCluster {
+  public connections: PeerConnection[] = [];
   public async start() {
     const network = MemoryNetwork.getNetwork();
-
     // 1
     const nodeIdentifier1 = "NODE1";
     const server1 = new MemoryServer();
@@ -20,21 +21,23 @@ export class FixedCluster {
       "MEMORY",
       true
     );
-    this.nodes.push(node1);
 
+    const node1Connection = PeerFactory("MEMORY", nodeIdentifier1);
+    this.connections.push(node1Connection);
     setTimeout(async () => {
       // 2
       const nodeIdentifier2 = "NODE2";
       const server2 = new MemoryServer();
       network.addServer(nodeIdentifier2, server2);
       const state2 = new LocalStateManager(nodeIdentifier2);
-      const node2 = await RaftNode.create(
+      await RaftNode.create(
         nodeIdentifier2,
         server2,
         state2,
         "MEMORY"
       );
-      this.nodes.push(node2);
+      const node2Connection = PeerFactory("MEMORY", nodeIdentifier2);
+      this.connections.push(node2Connection);
       server1.AddServer({ newServer: "NODE2" });
 
       // 3
@@ -42,13 +45,14 @@ export class FixedCluster {
       const server3 = new MemoryServer();
       network.addServer(nodeIdentifier3, server3);
       const state3 = new LocalStateManager(nodeIdentifier3);
-      const node3 = await RaftNode.create(
+      await RaftNode.create(
         nodeIdentifier3,
         server3,
         state3,
         "MEMORY"
       );
-      this.nodes.push(node3);
+      const node3Connection = PeerFactory("MEMORY", nodeIdentifier3);
+      this.connections.push(node3Connection);
       server1.AddServer({ newServer: nodeIdentifier3 });
 
       // 4:
@@ -56,13 +60,14 @@ export class FixedCluster {
       const server4 = new MemoryServer();
       network.addServer(nodeIdentifier4, server4);
       const state4 = new LocalStateManager(nodeIdentifier4);
-      const node4 = await RaftNode.create(
+      await RaftNode.create(
         nodeIdentifier4,
         server4,
         state4,
         "MEMORY"
       );
-      this.nodes.push(node4);
+      const node4Connection = PeerFactory("MEMORY", nodeIdentifier4);
+      this.connections.push(node4Connection);
       server1.AddServer({ newServer: nodeIdentifier4 });
 
       // 5
@@ -70,13 +75,14 @@ export class FixedCluster {
       const server5 = new MemoryServer();
       network.addServer(nodeIdentifier5, server5);
       const state5 = new LocalStateManager(nodeIdentifier5);
-      const node5 = await RaftNode.create(
+      await RaftNode.create(
         nodeIdentifier5,
         server5,
         state5,
         "MEMORY"
       );
-      this.nodes.push(node5);
+      const node5Connection = PeerFactory("MEMORY", nodeIdentifier5);
+      this.connections.push(node5Connection);
       server1.AddServer({ newServer: nodeIdentifier5 });
     }, 310);
   }

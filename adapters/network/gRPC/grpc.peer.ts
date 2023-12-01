@@ -1,16 +1,19 @@
-import grpc from "@grpc/grpc-js";
+import * as grpc from "@grpc/grpc-js";
 import {
   RequestVoteRequest,
   RequestVoteResponse,
   AppendEntryRequest,
   AppendEntryResponse,
+  AddServerRequest,
+  MembershipChangeResponse,
+  RemoveServerRequest,
+  ClientQueryResponse,
+  ClientRequestResponse,
 } from "@/dtos";
-import messages from "./protobuf/service_pb";
-import { PeerConnection } from "@/interfaces";
-import { RaftNodeClient } from "./protobuf/service_grpc_pb";
-
+import { Command, PeerConnection } from "@/interfaces";
+import * as protoLoader from "@grpc/proto-loader";
 export class gRPCPeer implements PeerConnection {
-  private client!: RaftNodeClient;
+  private client!: any;
   constructor(public peerId: string, private port: number) {
     this.port = port;
     this.peerId = peerId;
@@ -20,9 +23,20 @@ export class gRPCPeer implements PeerConnection {
   /*************************
    Connections
    *************************/
-  private getClient(): RaftNodeClient {
-    const client = new RaftNodeClient(
-      `0.0.0.0:${this.port}`,
+  private getClient(): any {
+    const packageDefinition = protoLoader.loadSync(
+      "./adapters/network/gRPC/protobuf/service.proto",
+      {
+        keepCase: false,
+        longs: String,
+        enums: Number,
+        defaults: true,
+        oneofs: true,
+      }
+    );
+    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
+    const client = new (protoDescriptor as any).RaftNode(
+      `localhost:${this.port}`,
       grpc.credentials.createInsecure()
     );
     return client;
@@ -33,24 +47,17 @@ export class gRPCPeer implements PeerConnection {
     callback: (response: RequestVoteResponse) => void
   ): Promise<void> {
     return new Promise((resolve, reject) => {
-      const grpcRequest = new messages.RequestVoteRequest()
-        .setTerm(request.term)
-        .setLastLogTerm(request.lastLogTerm)
-        .setLastLogIndex(request.lastLogIndex)
-        .setCandidateId(request.candidateId);
-
-      this.client.requestVote(grpcRequest, (error, response) => {
-        if (error) {
-          reject(error);
-        } else {
-          const clientResponse: RequestVoteResponse = {
-            term: response.getTerm(),
-            voteGranted: response.getVoteGranted(),
-          };
-          callback(clientResponse);
-          resolve();
+      this.client.requestVote(
+        request,
+        (error: any, response: RequestVoteResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            callback(response);
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -58,32 +65,90 @@ export class gRPCPeer implements PeerConnection {
     request: AppendEntryRequest,
     callback: (response: AppendEntryResponse) => void
   ): Promise<void> {
+    const grpcRequest = {
+      ...request,
+      entries: JSON.stringify(request.entries),
+    };
     return new Promise((resolve, reject) => {
-      const grpcRequest = new messages.AppendEntriesRequest()
-        .setTerm(request.term)
-        .setPrevLogTerm(request.prevLogTerm)
-        .setPrevLogIndex(request.prevLogIndex)
-        .setLeaderId(request.leaderId)
-        .setLeaderCommit(request.leaderCommit)
-        .setEntriesList(
-          request.entriesList.map((entry) => {
-            return new messages.LogEntry()
-              .setTerm(entry.term)
-              .setCommand(entry.command);
-          })
-        );
-      this.client.appendEntries(grpcRequest, (error, response) => {
-        if (error) {
-          reject(error);
-        } else {
-          const clientResponse: AppendEntryResponse = {
-            term: response.getTerm(),
-            success: response.getSuccess(),
-          };
-          callback(clientResponse);
-          resolve();
+      this.client.appendEntries(
+        grpcRequest,
+        (error: any, response: AppendEntryResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            callback(response);
+            resolve();
+          }
         }
-      });
+      );
+    });
+  }
+
+  // used by clients / admins
+  async addServer(
+    request: AddServerRequest
+  ): Promise<MembershipChangeResponse> {
+    return new Promise((resolve, reject) => {
+      this.client.addServer(
+        request,
+        (error: any, response: MembershipChangeResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+  async removeServer(
+    request: RemoveServerRequest
+  ): Promise<MembershipChangeResponse> {
+    return new Promise((resolve, reject) => {
+      this.client.removeServer(
+        request,
+        (error: any, response: MembershipChangeResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  async clientRequest(request: Command<any>): Promise<ClientRequestResponse> {
+    const grpcRequest = {
+      ...request,
+      data: JSON.stringify(request.data),
+    };
+    return new Promise((resolve, reject) => {
+      this.client.clientRequest(
+        grpcRequest,
+        (error: any, response: ClientRequestResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
+    });
+  }
+
+  async clientQuery(key: string): Promise<ClientQueryResponse> {
+    return new Promise((resolve, reject) => {
+      this.client.clientQuery(
+        { key },
+        (error: any, response: ClientQueryResponse) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(response);
+          }
+        }
+      );
     });
   }
 }

@@ -5,7 +5,7 @@ export interface AppendEntryRequest {
   leaderId: string;
   prevLogIndex: number;
   prevLogTerm: number;
-  entriesList: LogEntry[];
+  entries: LogEntry[];
   leaderCommit: number; // leader's commitIndex
 }
 

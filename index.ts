@@ -1,16 +1,19 @@
 import "module-alias/register";
-import { FixedCluster } from "./clusters/memory.cluster";
 import readline from "readline";
 import { CommandType } from "./interfaces";
 import { sleep } from "./utils";
+import { gRPCCluster } from "./clusters/grpc.cluster";
+import { MemoryCluster } from "./clusters/memory.cluster";
 
-const cluster = new FixedCluster();
+const cluster = new gRPCCluster();
 
 (async () => {
+  // it's used for debugging only, if enabled, the prompt will be messed up. 
+  // because of the raft logs.
   console.log = () => {};
   cluster.start();
   await sleep(1000);
-  let leader = cluster.nodes[0]
+  let leader = cluster.connections[0];
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -26,7 +29,7 @@ const cluster = new FixedCluster();
           console.info("Error: SET command requires key and value arguments.");
           break;
         }
-        const setResponse = await leader.handleClientRequest({
+        const setResponse = await leader.clientRequest({
           type: CommandType.STORE_SET,
           data: {
             key: args[1].toLowerCase(),
@@ -34,8 +37,11 @@ const cluster = new FixedCluster();
           },
         });
         if (setResponse.leaderHint) {
-          leader = cluster.nodes.filter(node => node.nodeId == response.leaderHint)[0];
+          leader = cluster.connections.filter(
+            (connection) => connection.peerId == response.leaderHint
+          )[0];
         }
+        rl.prompt();
         break;
 
       case "DEL":
@@ -43,15 +49,18 @@ const cluster = new FixedCluster();
           console.info("Error: DELETE command requires a key argument.");
           break;
         }
-        const response = await leader.handleClientRequest({
+        const response = await leader.clientRequest({
           type: CommandType.STORE_DEL,
           data: {
             key: args[1].toLowerCase(),
           },
         });
         if (response.leaderHint) {
-          leader = cluster.nodes.filter(node => node.nodeId == response.leaderHint)[0];
+          leader = cluster.connections.filter(
+            (connection) => connection.peerId == response.leaderHint
+          )[0];
         }
+        rl.prompt();
         break;
 
       case "GET":
@@ -59,12 +68,15 @@ const cluster = new FixedCluster();
           console.info("Error: GET command requires a key argument.");
           break;
         }
-        const queryResponse = leader.handleClientQuery(args[1].toLowerCase());
+        const queryResponse = await leader.clientQuery(args[1].toLowerCase());
         if (queryResponse.leaderHint) {
-          leader = cluster.nodes.filter(node => node.nodeId == response.leaderHint)[0];
+          leader = cluster.connections.filter(
+            (connection) => connection.peerId == response.leaderHint
+          )[0];
         } else {
-          console.info(queryResponse.response);
+         console.info(queryResponse.response == '' ? null : queryResponse.response);
         }
+        rl.prompt();
         break;
 
       case "EXIT":
@@ -79,12 +91,9 @@ const cluster = new FixedCluster();
 
   rl.on("line", async (input) => {
     processCommand(input);
-    rl.prompt();
   });
 
-  console.info(
-    "TF-RAFT: Distributed KV Store for educational fun!"
-  );
+  console.info("TF-RAFT: Distributed KV Store for educational fun!");
   console.info(
     "Enter your commands (e.g., SET key value, DEL key, GET key). Type EXIT to end."
   );

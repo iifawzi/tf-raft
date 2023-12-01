@@ -3,7 +3,7 @@ import { Command, CommandType } from "@/interfaces/Command";
 export function noOpCMD(nodeId: string): Command<string> {
   return {
     type: CommandType.NOOP,
-    data: nodeId,
+    data: "NO-OP-" + nodeId,
   };
 }
 

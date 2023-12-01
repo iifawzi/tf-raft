@@ -47,11 +47,11 @@ describe("Leaders", () => {
       const node2NOOPLog = await node2.nodeStore.getLogAtIndex(1);
       const node3NOOPLog = await node3.nodeStore.getLogAtIndex(1);
       expect(node1NOOPLog.term).toEqual(0);
-      expect(node1NOOPLog.command.data).toEqual("NODE1");
+      expect(node1NOOPLog.command.data).toEqual("NO-OP-NODE1");
       expect(node2NOOPLog.term).toEqual(0);
-      expect(node2NOOPLog.command.data).toEqual("NODE1");
+      expect(node2NOOPLog.command.data).toEqual("NO-OP-NODE1");
       expect(node3NOOPLog.term).toEqual(0);
-      expect(node3NOOPLog.command.data).toEqual("NODE1");
+      expect(node3NOOPLog.command.data).toEqual("NO-OP-NODE1");
 
       node1.stopListeners();
       node2.stopListeners();

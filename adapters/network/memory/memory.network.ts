@@ -1,10 +1,16 @@
 import {
+  AddServerRequest,
   AppendEntryRequest,
   AppendEntryResponse,
+  ClientQueryResponse,
+  ClientRequestResponse,
+  MembershipChangeResponse,
+  RemoveServerRequest,
   RequestVoteRequest,
   RequestVoteResponse,
 } from "@/dtos";
 import { MemoryServer } from "./memory.server";
+import { Command } from "@/interfaces";
 
 export class MemoryNetwork {
   public nodes: Record<string, MemoryServer> = {};
@@ -40,6 +46,39 @@ export class MemoryNetwork {
     return response;
   }
 
+  public async addServerToNode(
+    nodeId: string,
+    request: AddServerRequest
+  ): Promise<MembershipChangeResponse> {
+    const response = await this.nodes[nodeId].AddServer(request);
+    return response;
+  }
+
+  public async removeServerFromNode(
+    nodeId: string,
+    request: RemoveServerRequest
+  ): Promise<MembershipChangeResponse> {
+    const response = await this.nodes[nodeId].RemoveServer(request);
+    return response;
+  }
+
+  public clientQueryToNode(
+    nodeId: string,
+    key: string
+  ): ClientQueryResponse {
+    const response = this.nodes[nodeId].ClientQuery({ key });
+    return response;
+  }
+
+  public async clientRequestToNode(
+    nodeId: string,
+    request: Command<any>
+  ): Promise<ClientRequestResponse> {
+    const response = await this.nodes[nodeId].ClientRequest(request);
+    return response;
+  }
+
+  // adding server to the network.
   public async addServer(nodeId: string, server: MemoryServer) {
     this.nodes[nodeId] = server;
   }

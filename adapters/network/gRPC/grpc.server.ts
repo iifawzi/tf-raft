@@ -1,8 +1,7 @@
 import { Server } from "@/interfaces";
-import grpc from "@grpc/grpc-js";
-import messages from "./protobuf/service_pb";
-import services from "./protobuf/service_grpc_pb";
+import * as grpc from "@grpc/grpc-js";
 import { RaftNode } from "@/core";
+import * as protoLoader from "@grpc/proto-loader";
 
 export class gRPCServer implements Server {
   private node!: RaftNode;
@@ -17,9 +16,22 @@ export class gRPCServer implements Server {
    Connections
    *************************/
   private getServer() {
+    const packageDefinition = protoLoader.loadSync("./adapters/network/gRPC/protobuf/service.proto", {
+      keepCase: false,
+      longs: String,
+      enums: Number,
+      defaults: true,
+      oneofs: true,
+    });
+    const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
     const server = new grpc.Server();
-    server.addService(services.RaftNodeService, {
-      RequestVote: this.RequestVote,
+    server.addService((protoDescriptor.RaftNode as any).service, {
+      requestVote: this.RequestVote.bind(this),
+      appendEntries: this.AppendEntries.bind(this),
+      addServer: this.AddServer.bind(this),
+      removeServer: this.RemoveServer.bind(this),
+      clientRequest: this.ClientRequest.bind(this),
+      clientQuery: this.ClientQuery.bind(this),
     });
     return server;
   }
@@ -27,14 +39,14 @@ export class gRPCServer implements Server {
   listen(node: RaftNode): void {
     this.node = node;
     this.server.bindAsync(
-      `0.0.0.0:${this.port}`,
+      `localhost:${this.port}`,
       grpc.ServerCredentials.createInsecure(),
       (error, port) => {
         if (error) {
           console.error(`Error binding server: ${error}`);
         } else {
           this.server.start();
-          console.log(`Server started on port ${port}`);
+          console.error(`Server started on port ${port}`);
         }
       }
     );
@@ -45,62 +57,58 @@ export class gRPCServer implements Server {
    *************************/
 
   public async RequestVote(
-    call: grpc.ServerUnaryCall<messages.RequestVoteRequest.AsObject, null>,
-    callback: grpc.sendUnaryData<messages.RequestVoteResponse>
+    call: any,
+    callback: any
   ): Promise<void> {
     const response = await this.node.requestVoteHandler(call.request);
-    const grpcResponse = new messages.RequestVoteResponse();
-    grpcResponse.setTerm(response.term);
-    grpcResponse.setVoteGranted(response.voteGranted);
-    callback(null, grpcResponse);
+    callback(null, response);
   }
 
   public async AppendEntries(
-    call: grpc.ServerUnaryCall<messages.AppendEntriesRequest.AsObject, null>,
-    callback: grpc.sendUnaryData<messages.AppendEntriesResponse>
+    call: any,
+    callback: any
   ): Promise<void> {
-    const response = await this.node.appendEntryHandler(call.request);
-    const grpcResponse = new messages.AppendEntriesResponse();
-    grpcResponse.setTerm(response.term);
-    grpcResponse.setSuccess(response.success);
-    callback(null, grpcResponse);
+    const clientRequest = {
+      ...call.request,
+      entries: JSON.parse(call.request.entries),
+    }
+    const response = await this.node.appendEntryHandler(clientRequest);
+    callback(null, response);
   }
 
   public async AddServer(
-    call: grpc.ServerUnaryCall<messages.AddServerRequest.AsObject, null>,
-    callback: grpc.sendUnaryData<messages.MembershipChangeResponse>
+    call: any,
+    callback: any
   ) {
+
     const response = await this.node.addServerHandler(call.request);
-    const grpcResponse = new messages.MembershipChangeResponse();
-    grpcResponse.setStatus(response.status);
-    grpcResponse.setLeaderHint(response.leaderHint);
-    callback(null, grpcResponse);
+    callback(null, response);
   }
 
   public async RemoveServer(
-    call: grpc.ServerUnaryCall<messages.RemoveServerRequest.AsObject, null>,
-    callback: grpc.sendUnaryData<messages.MembershipChangeResponse>
+    call: any,
+    callback: any,
   ) {
     const response = await this.node.removeServerHandler(call.request);
-    const grpcResponse = new messages.MembershipChangeResponse();
-    grpcResponse.setStatus(response.status);
-    grpcResponse.setLeaderHint(response.leaderHint);
-    callback(null, grpcResponse);
+    callback(null, response);
   }
 
-  public async ClientRequest( call: grpc.ServerUnaryCall<messages.ClientRequestRequest.AsObject, null>,
-    callback: grpc.sendUnaryData<messages.NoResponse>) {
-    await this.node.handleClientRequest(call.request);
-    const grpcResponse = new messages.NoResponse();
-    callback(null, grpcResponse);
+  public async ClientRequest(
+    call: any,
+    callback: any,
+  ) {
+    const request = {
+      ...call.request,
+      data: JSON.parse(call.request.data),
+    }
+    await this.node.handleClientRequest(request);
+    callback(null, {});
   }
-  public async ClientQuery( call: grpc.ServerUnaryCall<messages.ClientQueryRequest.AsObject, null>,
-    callback: grpc.sendUnaryData<messages.ClientQueryResponse>) {
-      const response = await this.node.handleClientQuery(call.request.key);
-      const grpcResponse = new messages.ClientQueryResponse();
-      grpcResponse.setStatus(response.status);
-      grpcResponse.setLeaderHint(response.leaderHint);
-      grpcResponse.setResponse(response.response);
-      callback(null, grpcResponse);
+  public ClientQuery(
+    call: any,
+    callback: any,
+  ) {
+    const response = this.node.handleClientQuery(call.request.key);
+    callback(null, response);
   }
 }
