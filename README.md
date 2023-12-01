@@ -38,3 +38,11 @@ Below are the commands supported by tf-raft, along with their descriptions and e
 | `SSET set_name value1 [value2 ...]`       | Add one or more members to a set                        | `SSET my_set value1 value2`            |
 
 Please note that tf-raft is not intended for production use and serves solely as an educational tool.
+
+### License
+
+[MIT](LICENSE)
+
+### Copyright
+
+Copyright (c) 2023 Fawzi Abdulfattah 
