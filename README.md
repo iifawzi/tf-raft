@@ -2,6 +2,10 @@
 
 ![Untitled-2023-12-02-0248](https://github.com/iifawzi/tf-raft/assets/46695441/6f9312a0-c4c5-4bf6-ba25-6bfdadd7e8cd)
 
+![Dec-02-2023 03-19-42](https://github.com/iifawzi/tf-raft/assets/46695441/f929ca76-17b4-4186-8785-bd9536eb1cca)
+
+
+
 ## About the Project
 
 tf-raft is a <b>non-production-ready</b>, reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
