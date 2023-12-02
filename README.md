@@ -172,6 +172,19 @@ https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6
 
 https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/factories/peer.factory.ts#L5-L18
 
+### Testing
+
+The foundational logic, coupled with the memory adapters, has undergone comprehensive testing using JEST, achieving near 99% test coverage.
+
+To run the tests, execute the following command:
+```bash
+npm run test
+```
+
+Please note that due to the usage of json-db for persistent storage, occasional unexpected behavior may occur, leading to the temporary deletion and restoration of the entire stored data for seconds. This unpredictability might result in test failures.
+
+For thorough testing, it is better to run the tests multiple times. If encountering errors such as "can't read term of undefined," it indicates a momentary disappearance of persisted data. Running the tests again should mitigate this issue.
+
 ### Useful References for implementation
 
 besides the dissertation, it was super useful going through the discussions in the raft-dev group, many of the questions that mind come to your mind while implementing this, has been already discussed in the group. [Raft development Group](https://groups.google.com/g/raft-de)
