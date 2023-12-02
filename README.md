@@ -2,11 +2,9 @@
 
 ![Untitled-2023-12-02-0248](https://github.com/iifawzi/tf-raft/assets/46695441/118eb8d8-7796-4b02-8f4c-0fb82bca1af3)
 
-
-
 ## About the Project
 
-tf-raft is a <b>non-production-ready</b>, reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
+tf-raft is a <b>non-production-ready</b> reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
 
 The system supports three types of data stores: `HASH`, `SET`, and `STRING`.
 
