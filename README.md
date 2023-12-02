@@ -85,7 +85,53 @@ Within the context of tf-raft, the term "peers" refers to the clients of a node.
 
 Let's say we want to create a node using the `Memory` Protocol, this can be achieved by firstly creating the adapters, `MemoryServer` and `LocalStateManager` then inject it into the RaftNode create method.
 
-https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/clusters/memory.cluster.ts#L18-L28
+
+```ts
+export class MemoryCluster implements RaftCluster {
+  constructor(private nodesNumber: number) {
+    this.nodesNumber = nodesNumber;
+  }
+
+  public connections: PeerConnection[] = [];
+  public async start() {
+    const network = MemoryNetwork.getNetwork();
+
+    // LEADER NODE
+    const nodeIdentifier1 = "NODE";
+    const server1 = new MemoryServer();
+    network.addServer(nodeIdentifier1, server1);
+    const state1 = new LocalStateManager(nodeIdentifier1);
+    await RaftNode.create(
+      nodeIdentifier1,
+      server1,
+      state1,
+      "MEMORY",
+      true
+    );
+
+    const node1Connection = PeerFactory("MEMORY", nodeIdentifier1);
+    this.connections.push(node1Connection);
+    setTimeout(async () => {
+      for ( let i = 0; i < this.nodesNumber - 1; i++) {
+        const nodeIdentifier = "NODE" + i;
+        const server = new MemoryServer();
+        network.addServer(nodeIdentifier, server);
+        const state = new LocalStateManager(nodeIdentifier);
+        await RaftNode.create(
+          nodeIdentifier,
+          server,
+          state,
+          "MEMORY"
+        );
+        const nodeConnection = PeerFactory("MEMORY", nodeIdentifier);
+        this.connections.push(nodeConnection);
+        server1.AddServer({ newServer: nodeIdentifier });
+      }
+    }, 310);
+  }
+}
+
+```
 
 <ol>
   <li><strong>Node Identification:</strong>
