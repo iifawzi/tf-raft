@@ -63,6 +63,61 @@ npm run start [memory, RPC] [number_of_nodes]
 
 After running the start command, a command-line prompt will be available to issue the commands mentioned above.
 
+## Development areas
+
+### How it Works
+
+The tf-raft implementation is organized into distinct folders to enhance clarity and maintainability. The core implementation resides in the Core folder, featuring the essential components of the RAFT consensus protocol. Additionally, network and persistence adapters are located in the adapters folder, while the logic governing the key-value store is encapsulated within the store folder.
+
+tf-raft supports currently comes with two clusters, namely `MemoryCluster` and `gRPCCluster`, The `MemoryCluster` has a virtual network to facilitate communication among peers and nodes.
+
+Within the context of tf-raft, the term "peers" refers to the clients of a node. Communication with any node is achieved through its associated peer. The concept of peers aligns with RAFT terminology, where, for a given node, all other nodes in the system are considered peers.
+
+### How to create a node / Peer?
+
+Let's say we want to create a node using the `Memory` Protocol, this can be achieved by firstly creating the adapters, `MemoryServer` and `LocalStateManager` then inject it into the RaftNode create method.
+
+https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/clusters/memory.cluster.ts#L18-L28
+
+<ol>
+  <li><strong>Node Identification:</strong>
+    <ul>
+      <li>const identifier = "NODE": Assigns a unique identifier to the node, crucial for distinguishing it within the cluster.</li>
+    </ul>
+  </li>
+  <li><strong>Adapters Creation:</strong>
+    <ul>
+      <li>Create the necessary adapters, <code>MemoryServer</code> for network communication and <code>LocalStateManager</code> for local state management.</li>
+    </ul>
+  </li>
+  <li><strong>Register Server in Network: (Only used for memory protocol) </strong>
+    <ul>
+      <li><code>network.addServer(identifier, server1);</code>: Registers the newly created server in the network with the assigned identifier.</li>
+    </ul>
+  </li>
+  <li><strong>Local State Manager Setup:</strong>
+    <ul>
+      <li><code>const state1 = new LocalStateManager(identifier)</code>: Instantiates a <code>LocalStateManager</code> to manage the local state of the node, associated with the given identifier.</li>
+    </ul>
+  </li>
+  <li><strong>Node Creation:</strong>
+    <ul>
+      <li><code>await RaftNode.create(identifier, server1, state1, "MEMORY", true)</code>: Invokes the <code>create</code> method of <code>RaftNode</code>, initializing a new node with the specified identifier, server, state manager, protocol ("MEMORY" in this case), and an optional parameter indicating whether the node should start as a leader (<code>true</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Leader Startup Considerations:</strong>
+    <ul>
+      <li>The last parameter (<code>true</code>) is crucial when a node is intended to be a leader. It helps distinguish nodes that initiate the random election timeout and transition to the <code>candidate</code> state from those waiting for a leader to communicate with them (steady state). This prevents unnecessary conversions of newly added followers to candidates while the leader is syncing with them.</li>
+    </ul>
+  </li>
+</ol>
+
+for the Peers creation, you can simply depend on the factory: 
+
+https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/clusters/memory.cluster.ts#L30
+
+https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/factories/peer.factory.ts#L5-L18
+
 ## License
 
 [MIT](LICENSE)
