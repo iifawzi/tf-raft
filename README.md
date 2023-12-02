@@ -1,6 +1,7 @@
-# tf-raft: Distributed Key-Value Store for educational fun!
+# tf-raft: Distributed key-value store for educational fun!
 
-![Untitled-2023-12-02-0248](https://github.com/iifawzi/tf-raft/assets/46695441/6ed5238b-a080-4997-be29-30d25815f01f)
+![Untitled-2023-12-02-0248](https://github.com/iifawzi/tf-raft/assets/46695441/118eb8d8-7796-4b02-8f4c-0fb82bca1af3)
+
 
 
 ## About the Project
