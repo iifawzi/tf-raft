@@ -9,6 +9,10 @@ tf-raft is a <b>non-production-ready</b>, reliable, and fault-tolerant distribut
 
 The system supports three types of data stores: `HASH`, `SET`, and `STRING`.
 
+#### tl;dr: why not production ready?
+
+tf-raft is not production-ready due to some unimplemented features, such as leadership transfer, only-once semantics, and log compaction. However, log replication, leader elections, and membership changes are fully implemented, functional, and thoroughly tested. The project is shared openly to facilitate exploration and understanding of the RAFT Protocol within the TypeScript/JavaScript community, with potential future work to complete the missing features.
+
 ## Raft Consensus Protocol
 
 The implementation of tf-raft is based on the ["CONSENSUS: BRIDGING THEORY AND PRACTICE"](https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf) dissertation. Raft is a consensus protocol designed to be easy to understand. In essence, Raft ensures that a distributed system reaches a consensus on a single value even if some of the nodes in the system fail or behave maliciously.
