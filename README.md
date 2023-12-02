@@ -124,11 +124,11 @@ https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6
 
 https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/factories/peer.factory.ts#L5-L18
 
-### References
+### Useful References for implementation
 
 besides the dissertation, it was super useful going through the discussions in the raft-dev group, many of the questions that mind come to your mind while implementing this, has been already discussed in the group. [Raft development Group](https://groups.google.com/g/raft-de)
 
-bonus if you're arabic speaker, the distributed systems' list by Ahmed Fraghal [Distributed Systems in arabic](https://www.youtube.com/watch?v=s_p3I5CMGJw)
+bonus if you're arabic speaker: the distributed systems' list by Ahmed Fraghal [Distributed Systems in arabic](https://www.youtube.com/watch?v=s_p3I5CMGJw)
 and actually it was the first time I hear about raft, in this series.
 
 ## License
