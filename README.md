@@ -2,7 +2,6 @@
 
 ![Untitled-2023-12-02-0248](https://github.com/iifawzi/tf-raft/assets/46695441/6f9312a0-c4c5-4bf6-ba25-6bfdadd7e8cd)
 
-
 ## About the Project
 
 tf-raft is a <b>non-production-ready</b>, reliable, and fault-tolerant distributed key-value store based on the RAFT Consensus Protocol. It is designed for educational purposes, providing a hands-on experience with distributed systems.
@@ -15,7 +14,7 @@ tf-raft is not production-ready due to some unimplemented features, such as lead
 
 ## Raft Consensus Protocol
 
-The implementation of tf-raft is based on the ["CONSENSUS: BRIDGING THEORY AND PRACTICE"](https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf) dissertation. Raft is a consensus protocol designed to be easy to understand. In essence, Raft ensures that a distributed system reaches a consensus on a single value even if some of the nodes in the system fail or behave maliciously.
+The implementation of tf-raft is based on the [CONSENSUS: Bridging theory and practice](https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf) dissertation. Raft is a consensus protocol designed to be easy to understand. In essence, Raft ensures that a distributed system reaches a consensus on a single value even if some of the nodes in the system fail or behave maliciously.
 
 In short, Raft achieves consensus through a leader-follower model, where one node serves as the leader and others as followers. The leader is responsible for coordinating the consensus process, and all updates go through the leader to ensure consistency.
 
@@ -72,7 +71,7 @@ After running the start command, a command-line prompt will be available to issu
 
 ## Development areas
 
-### How it Works
+### How it Works?
 
 The tf-raft implementation is organized into distinct folders to enhance clarity and maintainability. The core implementation resides in the Core folder, featuring the essential components of the RAFT consensus protocol. Additionally, network and persistence adapters are located in the adapters folder, while the logic governing the key-value store is encapsulated within the store folder.
 
@@ -119,11 +118,18 @@ https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6
   </li>
 </ol>
 
-for the Peers creation, you can simply depend on the factory: 
+for the Peers creation, you can simply depend on the factory:
 
 https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/clusters/memory.cluster.ts#L30
 
 https://github.com/iifawzi/tf-raft/blob/96d8d738b5db0b22771fda7cd909c09735eb60c6/factories/peer.factory.ts#L5-L18
+
+### References
+
+besides the dissertation, it was super useful going through the discussions in the raft-dev group, many of the questions that mind come to your mind while implementing this, has been already discussed in the group. [Raft development Group](https://groups.google.com/g/raft-de)
+
+bonus if you're arabic speaker, the distributed systems' list by Ahmed Fraghal [Distributed Systems in arabic](https://www.youtube.com/watch?v=s_p3I5CMGJw)
+and actually it was the first time I hear about raft, in this series.
 
 ## License
 
