@@ -22,7 +22,7 @@ tf-raft implements the three core components of the RAFT Consensus Protocol:
 
 1. **Leader Election:** The process by which a leader is chosen among the nodes.
 2. **Log Replication:** Ensuring that the logs across nodes are consistent through replication.
-3. **Cluster Membership Changes:** Handling dynamic changes in the cluster, such as adding or removing nodes.
+3. **Cluster Membership Changes (one member at a time):** Handling dynamic changes in the cluster, such as adding or removing nodes 
 
 The core of tf-raft is fully isolated and independent from the infrastructure, relying on ports and adapters for high flexibility.
 tf-raft currently supports `gRPC` and `In-Memory` adapters for the network layer & `In-Memory` and `JSON-Based` adapters for volatile and non-volatile states, respectively.
